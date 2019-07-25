@@ -12,6 +12,8 @@
 
 #define pi (2*acos(0.0))
 
+const double EPS = 1e-4;
+
 double cameraHeight;
 double cameraAngle;
 int drawGrid;
@@ -22,16 +24,20 @@ int transX[]= {1,-1,-1,1,1,-1,-1,1};
 int transY[]= {1,1,-1,-1,1,1,-1,-1};
 int transZ[]= {1,1,1,1,-1,-1,-1,-1};
 
+double nearDist = 1;
+double farDist = 1000;
+double fovY = 90;
+double fovX = fovY;
+
+
+double sceneX, sceneY;
 
 //for ray tracing variables
-double screenHeight, screenWidth;
+double  number_of_pixels;
 double recursionLevel;
 
 
-//vector<Sphere>spheres;
-//vector<Pyramid>pyramids;
-//vector<Point>lights;
-//CheckBoard checkBoard;
+
 
 //Color imageMap[2002][2002];
 //Color sourcePower;
@@ -41,20 +47,14 @@ double recursionLevel;
 #define SPHERE 2
 #define EYE 3
 
-struct Point
-{
-    float x,y,z;
-};
-
-Point pos,u,r,l;
 
 
 /* FUNCTIONS */
-Point cartesianToPolar(Point vec);
-Point crossProduct(const Point &vec1, const Point &vec2);
-void drawSphere(double radius, int slices, int stacks);
+//Point cartesianToPolar(Point vec);
+//Point crossProduct(const Point &vec1, const Point &vec2);
+void drawNormalSphere(double radius, int slices, int stacks);
 void drawOneEighthSphere(double radius, int slices, int stacks, int divisionNo);
-void drawSquare(double a);
+//void drawSquare(double a);
 void drawOneFourthCylinder(float radius, int Length, int slices, int divisionNo);
 void drawSphereToFromCube(double cubeLength, int radius);
 void drawCircle(double radius,int segments);
@@ -70,46 +70,427 @@ void display();
 void animate();
 
 
+void generateRays();
+
+inline double degToRad(double ang) {
+    return ang * pi / 180.0;
+}
+
+static inline bool isNearlyEqual(const double &a, const double &b) {
+    return abs(a - b) < EPS;
+}
+
+float Cos(float angle) {
+    float var = cos(degToRad(angle));
+    if (isNearlyEqual(var, 0)) var = 0;
+    return var;
+}
+
+float Sin(float angle) {
+    float var = sin(degToRad(angle));
+    if (isNearlyEqual(var, 0)) var = 0;
+    return var;
+}
+
+float Tan(float angle) {
+    float var = tan(degToRad(angle));
+    if (isNearlyEqual(var, 0)) var = 0;
+    return var;
+}
+
+
+
+
 struct  Color
 {
     double r,g,b;
+    Color(){}
+    Color(double rr, double gg, double bb)
+    {
+        r=rr;
+        g=gg;
+        b=bb;
+    }
+
+    Color(const Color &c)
+    {
+        r=c.r;
+        g=c.g;
+        b=c.b;
+    }
+
+    Color operator *(const double &scalar) const {
+        Color res;
+
+        res.r= r * scalar;
+        res.g = g* scalar;
+        res.b = b* scalar;
+
+        return res;
+    }
+
+    Color operator +(const Color &v2) const {
+        Color res;
+
+        res.r= r + v2.r;
+        res.g = g + v2.g;
+        res.b = b + v2.b;
+
+        return res;
+    }
+
+    Color operator -(const Color &v2) const {
+        Color res;
+
+        res.r= r - v2.r;
+        res.g = g - v2.g;
+        res.b = b - v2.b;
+
+        return res;
+    }
+
+    Color dot(const Color &c)
+    {
+        Color res;
+        res.r= r * c.r;
+        res.g = g* c.g;
+        res.b = b* c.b;
+
+        return res;
+    }
+
+    bool operator == (const Color &c) const {
+        if(abs(r-c.r) < EPS && abs(g-c.g) < EPS && abs(b-c.b) < EPS)
+        {
+            return true;
+        }
+        else return false;
+    }
+
+    void printColor()
+    {
+        std::cout<<"( " << r << ", " << g << ", " << b <<" )\n";  
+    }
+
 };
+
+
+
 
 struct vector
 {
-    
+    double x,y,z;
+    int dimension;
+
+
+    //constructors
+    vector(){}
+
+    vector(double vx, double vy, double vz) {
+
+        x = vx;
+        y = vy;
+        z = vz;
+        dimension = 3;
+    }
+
+    vector (const vector &v) {
+        x = v.x;
+        y = v.y;
+        z = v.z;
+    }
+
+    //methods
+    bool operator == (const vector &v) const {
+
+        //?
+        if(!abs(x-v.x) > EPS) return true;
+        if(!abs(y-v.y) > EPS) return true;
+        if(!abs(z-v.z) > EPS) return true;
+
+        return false;
+    }
+
+
+    //scalar  multiplication
+    vector operator *(const double &scalar)  const{
+        vector res;
+    // cout << "scalar is " << scalar << endl;
+        res.x = x * scalar;
+        res.y = y * scalar;
+        res.z = z * scalar;
+        return res;
+    }
+
+
+    //cross product
+    vector operator *(const vector &vec2) const{
+
+        vector res;
+        res.x = y * vec2.z - vec2.y * z;
+        res.y = z * vec2.x - vec2.z * x;
+        res.z = x * vec2.y - vec2.x * y;
+
+        return res;
+    }
+
+    vector operator +(const vector &v2) const {
+
+        vector ret;
+        ret.x = x + v2.x;
+        ret.y = y + v2.y;
+        ret.z = z + v2.z;
+        return ret;
+    }
+
+    vector operator -(const vector &v2) const {
+
+        vector ret;
+        ret.x = x - v2.x;
+        ret.y = y - v2.y;
+        ret.z = z - v2.z;
+        return ret;
+    }
+
+    double magnitude()
+    {
+        double mg = sqrt(x*x + y*y + z*z);
+        return mg;
+    }
+
+
+    void normalize() {
+
+        double val = this->magnitude();
+        //if magnitude less than EPS, return;
+        if(val<EPS) return;
+        x = x / val;
+        y = y / val;
+        z = z / val;
+
+    //cout << "\nnormalizing\n[ " << p.x << " " << p.y << " " << p.z << " " << p.w << " ] \n";
+
+    }
+
+    void printVector()
+    {
+        int precision = 7;
+        std::cout << std::fixed << std::setprecision(precision) << x <<" " <<y << " " << z << "\n";
+    }
 };
+
+double dot(const vector &vec1, const vector &vec2) {
+
+    double res = 0;
+
+    res += vec1.x * vec2.x + vec1.y * vec2.y + vec1.z * vec2.z;
+    if (isNearlyEqual(res, 0)) res = 0;
+
+    return res;
+}
+
+
+typedef vector Point;
+
+Point pos,u,r,l; //camera position
+Point new_pos, new_l, new_r, new_u;
+std::vector<std::vector<Point>> pointBuffer;
+
 
 struct Ray
 {
-    
+    Point startPoint;
+    vector direction;
+    Ray(){}
+    Ray(Point p0, Point p1 ){
+        direction = p1+(p0*(-1));
+        direction.normalize();
+    }
 };
 
 struct Plane
 {
-    
+    double a,b,c,d;
+    Plane(double aa, double bb, double cc, double dd)
+    {
+        a=aa;
+        b=bb;
+        c=cc;
+        d=dd;
+    }
 };
 
 
 struct Triangle
 {
-    
+    Point p[3];
+    Color c;
+
+    //constructors
+
+    Triangle(){}
+
+
+    Triangle(Point x, Point y, Point z) {
+        p[0] = x;
+        p[1] = y;
+        p[2] = z;
+
+    }
+
+    Triangle(Point x, Point y, Point z, Color triColor) {
+        p[0] = x;
+        p[1] = y;
+        p[2] = z;
+        c = triColor;
+        
+    }
+
+
+
+    void drawTriangle()
+    {
+        glColor3f(c.r,c.g,c.b);
+
+        glPushMatrix();
+        glBegin(GL_TRIANGLES);
+
+        glVertex3f(p[0].x, p[0].y, p[0].z);
+        glVertex3f(p[1].x, p[1].y, p[1].z);
+        glVertex3f(p[2].x, p[2].y, p[2].z);
+
+        glEnd();
+        glPopMatrix();
+
+    }
+
+    void printTriangle()
+    {
+        //std::cout<<"printing triangle points\n";
+        for (int i = 0; i < 3; ++i)
+        {
+            std::cout<<p[i].x << " " << p[i].y << " " << p[i].z << "\n";
+        }
+    }
+
 };
 
 
 struct Square
 {
-    
+
+    Point p[4];
+    Color c;
+
+    Square(){}
+    Square(Point bottomLeft, double width, Color myColor)
+    {
+        p[0]=bottomLeft;
+        p[1]=p[0] + Point(width, 0,0);
+        p[2]=p[1] + Point(0, width,0);
+        p[3]=p[0] + Point(0,width,0);
+        c = myColor;
+
+    }
+
+    Square(Point point0, Point point1, Point point2, Point point3, Color color)
+    {
+        p[0]= point0;
+        p[1]= point1;
+        p[2]= point2;
+        p[3]= point3;
+
+        c= color;
+    }
+
+    Square(const Square &sq)
+    {
+     p[0]= sq.p[0];
+     p[1]= sq.p[1];
+     p[2]= sq.p[2];
+     p[3]= sq.p[3];
+
+     c= sq.c;
+
+ }
+
+ void drawSquare()
+ {
+        //std::cout<<"in drawSquare\n";
+
+    glColor3f(c.r,c.g,c.b);
+    glBegin(GL_QUADS);
+    {
+        glVertex3f( p[0].x, p[0].y,p[0].z);
+        glVertex3f( p[1].x, p[1].y,p[1].z);
+        glVertex3f( p[2].x, p[2].y,p[2].z);
+        glVertex3f( p[3].x, p[3].y,p[3].z);
+    }
+    glEnd();
+
+        //std::cout<<"out of drawSquare\n";
+}
+
+void printSquare()
+{
+    for (int i = 0; i < 4; ++i)
+    {
+        std::cout<< p[i].x << " " << p[i].y << " " << p[i].z << " \n"; 
+    }
+}
+
 };
+
+
 struct Sphere
 {
-    Point center;
-    double rad;
-    Color c;
+    Point sphereCenter;
+    double radius;
+    Color sphereColor;
+
     double amb, diffuse, spec, refl;
     double shine;
 
+
     Sphere()  {}
+    
+    Sphere(Point center, double r, Color color = Color(0,0,0))
+    {
+        sphereCenter = center;
+        radius = r;
+        sphereColor = color;
+    }
+
+    Sphere (const Sphere &s)
+    {
+        sphereCenter = s.sphereCenter;
+        radius = s.radius;
+        sphereColor = s.sphereColor;
+    }
+
+    void drawSphere()
+    {
+        glPushMatrix();
+
+        glColor3f(sphereColor.r, sphereColor.g, sphereColor.b);
+        glTranslatef(sphereCenter.x, sphereCenter.y, sphereCenter.z);
+        drawNormalSphere(radius, 20, 20);
+
+        glPopMatrix();
+    }
+
+    void printSphere()
+    {
+        std::cout<<sphereCenter.x << " "<<sphereCenter.y << " "<<sphereCenter.z << " \n"; 
+        std::cout<<radius<<"\n";
+    }
+
+    vector normal_on_sphere(Point p)
+    {
+        Point n(p.x-sphereCenter.x, p.y-sphereCenter.y, p.z-sphereCenter.z);
+        n.normalize();
+        return n;
+    }
 
 };
 
@@ -117,15 +498,444 @@ struct Sphere
 
 struct Pyramid
 {
-    
+    Triangle tri[4];
+    Square square;
+
+    double height, width;
+    Color pyramidColor;
+
+    Pyramid(){}
+    Pyramid(Point bottomLeft, double w, double h, Color c)
+    {
+
+        Point pyramidBase[4];
+        width = w;
+        height = h;
+        pyramidColor = c;
+
+        //as point + point = vector
+
+        //generate four base points
+        pyramidBase[0] = bottomLeft;
+        pyramidBase[1] = bottomLeft + Point(width, 0,0);
+        pyramidBase[2] = bottomLeft + Point(width, width,0);
+        pyramidBase[3] = bottomLeft + Point(0,width, 0);
+
+
+        //generate top point of pyramid
+        Point pyramidTop = bottomLeft + Point(width/2, width/2, height);
+
+        //generate the base square points
+        square = Square(pyramidBase[0],pyramidBase[0],pyramidBase[0],pyramidBase[0], c);
+        
+        //generate the pyramid sides points
+        for (int i = 0; i < 4; ++i)
+        {
+            tri[i] = Triangle(pyramidTop, pyramidBase[i], pyramidBase[ (i+1)%4 ], c);
+        }
+
+    }
+
+    //drawing the pyramid
+    void drawPyramid()
+    {
+        glColor3f(pyramidColor.r, pyramidColor.g, pyramidColor.b);
+        
+        //drawing the sides
+        for (int i = 0; i < 4; ++i)
+        {
+            tri[i].drawTriangle();
+        }
+
+        //drawing the base
+        square.drawSquare();
+    }
+
+    void printPyramid()
+    {
+        std::cout<<"\nprinting pyramid\n";
+        for (int i = 0; i < 4; ++i)
+        {
+            tri[i].printTriangle();
+        }
+        square.printSquare();
+    }
+
 };
 
 
 struct CheckBoard
 {
-    
+
+    Point centerOfCheckBoard;
+    double radius;
+    Color c;
+    double height, width;
+    double TileHeight, TileWidth;
+
+    CheckBoard(){}
+    CheckBoard(double h, double w)
+    {
+        height = h;
+        width = w;
+        TileWidth = 20;
+        TileHeight = TileWidth;
+    }
+
+    CheckBoard(const CheckBoard &myCheckBoard)
+    {
+        height = myCheckBoard.height;
+        width = myCheckBoard.width;
+        TileWidth = myCheckBoard.width;
+        TileHeight = myCheckBoard.height;
+
+    }
+
+    void drawCheckBoard()
+    {
+        //std::cout<<"in drawCheckBoard\n";
+        int row = 0;
+        //std:: cout << "height " << height <<" width  " << width<< "\n";
+        for (double i = -width/2; i <= width/2; i+= TileWidth, row++)
+        {
+            int col = 0;
+            for (double j = -height/2; j <= height/2; j+= TileHeight, col++)
+            {
+
+                Color myColor(1,1,1);
+                if((row+col)%2 == 1) {
+                    myColor = Color(0,0,0);
+                }
+
+                Square mySquare (Point (i,j,0), TileWidth, myColor);
+                mySquare.drawSquare();
+
+            }
+        }
+
+        //std::cout<<"out of drawCheckBoard\n";
+    }
 };
 
+
+//to store the input sphere,pyramids and lights
+
+std::vector<Sphere> all_Spheres;
+std::vector<Pyramid>all_Pyramids;
+std::vector<Point>all_Lights;
+CheckBoard checkBoard;
+
+struct Object
+{
+    int object_type;
+    int object_id;
+
+    Object(int type = EYE, int id=0)
+    {
+        object_type= type;
+        object_id = id;
+    }
+
+    Object(const Object &obj)
+    {
+        object_type = obj.object_type;
+        object_id = obj.object_id;
+
+    }
+
+    bool operator == (const Object &obj) const {
+
+        if(object_type == obj.object_type && object_id == obj.object_id)
+        {
+            return true;
+        }
+        else return false;
+
+    }
+};
+
+void generatePoints()
+{
+    std::cout<<"in generate points\n";
+    Point midpoint;
+    
+    midpoint.x = new_pos.x + new_l.x*nearDist;
+    midpoint.y = new_pos.y + new_l.y*nearDist;
+    midpoint.z = new_pos.z + new_l.z*nearDist;
+
+    std::cout<<"midpoint is \n";
+    midpoint.printVector();
+
+    sceneY = 2*nearDist*Tan(fovY/2);
+    sceneX = 2*nearDist*Tan(fovX/2);
+
+    std::cout<<"sceneX " << sceneX << " sceneY " << sceneY <<"\n";
+    
+    double pixel_width = sceneX/number_of_pixels;
+    double pixel_height = sceneY/number_of_pixels;
+
+    std::cout<<"pixel_width " << pixel_width <<" pixel height " << pixel_height <<"\n";
+    double halfSceneX = sceneX/2;
+    double halfSceneY = sceneY/2;
+
+    Point temp;
+    temp.x = midpoint.x + new_u.x*halfSceneY;
+    temp.y = midpoint.y + new_u.y*halfSceneY;
+    temp.z = midpoint.z + new_u.z*halfSceneY;
+
+    Point middleTop(temp.x,temp.y,temp.z);
+
+    temp.x = middleTop.x-new_r.x*halfSceneX;
+    temp.y = middleTop.y-new_r.y*halfSceneX;
+    temp.z = middleTop.z-new_r.z*halfSceneX;
+
+    Point startPoint(temp.x,temp.y,temp.z);
+
+    //first pixel er midpoint ber kortisi
+    startPoint.x = startPoint.x-new_u.x*0.5*pixel_height + new_r.x*0.5*pixel_width;
+    startPoint.y = startPoint.y-new_u.y*0.5*pixel_height + new_r.y*0.5*pixel_width;
+    startPoint.z = startPoint.x-new_u.z*0.5*pixel_height + new_r.z*0.5*pixel_width;
+    
+
+    //i = row, j = col
+    for (int i = 0; i < number_of_pixels; ++i)
+    {
+        std::vector<Point> tempVec;
+        for (int j = 0; j < number_of_pixels; ++j)
+        {
+            temp.x = startPoint.x + new_r.x*j*pixel_width - new_u.x*i*pixel_height;
+            temp.y = startPoint.y + new_r.y*j*pixel_width - new_u.y*i*pixel_height;
+            temp.z = startPoint.z + new_r.z*j*pixel_width - new_u.z*i*pixel_height;
+            
+            Point generated_point(temp.x,temp.y,temp.z);
+
+            tempVec.push_back(generated_point);
+        }
+
+        pointBuffer.push_back(tempVec);
+        tempVec.clear();
+
+    }
+
+    //print generated points
+
+    std::cout<<"\nprinting pixels\n";
+    pointBuffer[0][0].printVector();
+    pointBuffer[0][number_of_pixels-1].printVector();
+    pointBuffer[0][(number_of_pixels/2) -1].printVector();
+
+    std::cout<<"\n";
+    pointBuffer[number_of_pixels-1][0].printVector();
+    pointBuffer[number_of_pixels-1][number_of_pixels-1].printVector();
+    pointBuffer[number_of_pixels-1][(number_of_pixels/2) -1].printVector();
+    std::cout<<"\nend of printing pixels\n";
+    
+    generateRays();
+
+}
+
+double farClip(Point p)
+{
+    double dist=p.magnitude();
+    double x=(farDist/nearDist)*dist;
+    return x-dist;
+}
+
+Color generate_pixels(Point bufferPoint, Point rayDir, int depth)
+{
+
+    //std::cout<<"in generate_pixels\n";
+   /* if(depth == 0)
+    {
+        Color c(0,0,0);
+        return c;
+    }*/
+
+
+    //double dist = rayDir.magnitude();
+    //double x = (farDist/nearDist)*dist; //?
+    //double maxDist = x-dist; //??
+
+    //double maxDist = farClip(rayDir);
+
+
+    rayDir.normalize();
+
+    double t_min = 100000;
+    Color color_pixel(0,0,0);
+
+    Point pixel_p, pixel_normal;
+    
+    bool does_it_intersect = false;
+    bool isSphere = false;
+
+
+
+    for (int i = 0; i < all_Spheres.size(); ++i)
+    {
+        Point center = all_Spheres[i].sphereCenter;
+        Point O_minus_C(bufferPoint.x-center.x, bufferPoint.y-center.y,bufferPoint.z-center.z);
+        
+        //O_minus_C.printVector();
+        
+        double a = 1; //d.d
+
+        double b = 2*(O_minus_C.x * rayDir.x + O_minus_C.y * rayDir.y + O_minus_C.z * rayDir.z );
+
+        double c = (O_minus_C.x*O_minus_C.x + O_minus_C.y*O_minus_C.y + O_minus_C.z*O_minus_C.z) - pow(all_Spheres[i].radius, 2) ;
+
+        double discriminant = (pow(b,2)-4*a*c);
+        double d = sqrt(pow(b,2)-4*a*c);
+
+        /*double r1 = (-b+root)/(2*a);
+        double r2 = (-b-root)/(2*a);*/
+        double t1=(-b+d)/(2*a);
+        double t2=(-b-d)/(2*a);
+
+        //std::cout<< discriminant<<  " ";
+        if((pow(b,2)-4*a*c) < 0) continue;
+
+        double temp_t = -1; //
+
+
+        //taking the nearest t point
+        /*if(r1 < 0 && r2 < 0) continue;
+        if(r1 > 0 && r2 < 0) temp_t = r1;
+        if(r1 < 0 && r2 > 0) temp_t = r2;
+        if(r1 > 0 && r2 > 0) temp_t = fmin(r1,r2);*/
+
+        std::cout<<"hwre\n";
+        if(t1<0 && t2<0) continue;
+        if(t1>0 && t2<0) temp_t=t1;
+        if(t1<0 && t2>0) temp_t=t2;
+        if(t1>0 && t2>0) temp_t=fmin(t1,t2);
+
+
+        std::cout<<"outside if\n";
+        if(temp_t > 0 && temp_t < t_min && temp_t <= farDist)
+        {
+            std::cout<<"in if\n";
+            t_min = temp_t;
+            does_it_intersect = true;
+
+            Point intersection_point(bufferPoint.x+t_min*rayDir.x, bufferPoint.y+t_min*rayDir.y, bufferPoint.z+t_min*rayDir.z);
+            pixel_p = intersection_point;
+            pixel_normal = all_Spheres[i].normal_on_sphere(pixel_p);
+            color_pixel = all_Spheres[i].sphereColor;
+
+            //code for ambience hobe ....
+
+            isSphere = true;
+
+        }
+
+        else continue;
+
+    }
+
+    /*color_pixel.r=std::fmax(color_pixel.r,0.0);
+    color_pixel.g=std::fmax(color_pixel.g,0.0);
+    color_pixel.b=std::fmax(color_pixel.b,0.0);*/
+
+    return color_pixel;
+}
+
+void generate_image(std::vector<std::vector<Color> > pixelBuffer)
+{
+
+    std::cout<<"in generate_image\n";
+    bitmap_image image(number_of_pixels,number_of_pixels);
+    for (int x = 0; x < number_of_pixels; x++) {
+        for (int y = 0; y < number_of_pixels; y++) {
+
+            double r = fmin(pixelBuffer[y][x].r,1);
+            //std::cout<<pixelBuffer[0][0].r <<"\n";
+            double g = fmin(pixelBuffer[y][x].g,1);
+            double b = fmin(pixelBuffer[y][x].b,1);
+
+            image.set_pixel(y,x,r,g,b);
+        }
+    }
+    image.save_image("testout.bmp");
+
+}
+void generateRays()
+{
+
+    std::cout<<"in generateRays\n";
+    //The direction vector of the ray is
+    //pointBuffer[x][y] – cameraPosition.
+
+    std::vector<std::vector<Color> > pixelBuffer; //2d pixel matrix
+    for (int i = 0; i < number_of_pixels; ++i)
+    {
+        std::vector<Color> pixels;
+        for (int j = 0; j < number_of_pixels; ++j)
+        {
+
+            Point temp;
+            temp.x = pointBuffer[i][j].x - new_pos.x; //pointBuffer[i][j] - camerapos
+            temp.y = pointBuffer[i][j].y - new_pos.y;
+            temp.z = pointBuffer[i][j].z - new_pos.z;
+            
+            Point rayDir(temp.x,temp.y,temp.z);
+            pixels.push_back(generate_pixels(pointBuffer[i][j], rayDir, 3));
+        }
+
+        for (int i = 0; i < 5; ++i)
+        {
+           // pixels[i].printColor();
+        }
+
+        pixelBuffer.push_back(pixels);
+
+    }
+
+    /*for (int i = 0; i < 5; ++i)
+    {
+        for (int j = 0; j < 5; ++j)
+        {
+
+            pixelBuffer[i][j].printColor();
+    // pixelBuffer[i][number_of_pixels-].printColor();
+    // pixelBuffer[0][(number_of_pixels-1)/2].printColor();
+
+        }
+    }*/
+
+
+    generate_image(pixelBuffer);
+    std::cout<<"out of generateRays\n";
+}
+
+
+
+
+void printWhatsStored()
+{
+    for (int i = 0; i < all_Pyramids.size(); ++i)
+    {
+        all_Pyramids.at(i).printPyramid();
+
+    }
+
+    std::cout<<"\n";
+
+    for (int i = 0; i < all_Spheres.size(); ++i)
+    {
+        all_Spheres.at(i).printSphere();
+
+    }
+
+    std::cout<<"\n";
+
+    /*for (int i = 0; i < all_Lights.size(); ++i)
+    {
+        std::cout<< all_Lights[i]<< " ";
+    }
+    
+    std::cout<<"\n";*/
+}
 
 Point cartesianToPolar(Point vec)
 {
@@ -160,10 +970,11 @@ Point crossProduct(const Point &vec1, const Point &vec2)
     stack = latitude
 
 */
-void drawSphere(double radius, int slices, int stacks)
+
+void drawNormalSphere(double radius, int slices, int stacks)
 {
 
-    struct Point points[100][100];
+    Point points[100][100];
     int i,j;
     double h,r;
     for(i=0; i<stacks; i++)
@@ -176,7 +987,7 @@ void drawSphere(double radius, int slices, int stacks)
             points[i][j].y = r*sin(((double)j/(double)slices) * 2 * pi);
             points[i][j].z = h;
 
-            glColor3f(0,0,0.6);
+            //glColor3f(0,0,0.6);
             glBegin(GL_POINTS);
             glVertex3f(points[i][j].x,points[i][j].y,points[i][j].z);
             glEnd();
@@ -186,7 +997,7 @@ void drawSphere(double radius, int slices, int stacks)
     ///draw quads using generated points
     for(i=0; i<stacks; i++)
     {
-        glColor3f((double)i/(double)stacks+0.5,(double)i/(double)stacks,(double)i/(double)stacks);
+        //glColor3f((double)i/(double)stacks+0.5,(double)i/(double)stacks,(double)i/(double)stacks);
         for(j=0; j<slices; j++)
         {
             glBegin(GL_QUADS);
@@ -207,7 +1018,8 @@ void drawSphere(double radius, int slices, int stacks)
     }
 }
 
-void drawOneEighthSphere(double radius, int slices, int stacks, int divisionNo)
+
+/*void drawOneEighthSphere(double radius, int slices, int stacks, int divisionNo)
 {
     glPushMatrix();
     {
@@ -263,22 +1075,10 @@ void drawOneEighthSphere(double radius, int slices, int stacks, int divisionNo)
     }
     glPopMatrix();
 }
-
-void drawSquare(double a)
-{
-    glColor3f(1.0,1.0,1.0);
-    glBegin(GL_QUADS);
-    {
-        glVertex3f( a, a,0);
-        glVertex3f( a,-a,0);
-        glVertex3f(-a,-a,0);
-        glVertex3f(-a, a,0);
-    }
-    glEnd();
-}
+*/
 
 
-void drawOneFourthCylinder(float radius, int Length, int slices, int divisionNo)
+/*void drawOneFourthCylinder(float radius, int Length, int slices, int divisionNo)
 {
     glPushMatrix();
     {
@@ -314,36 +1114,15 @@ void drawOneFourthCylinder(float radius, int Length, int slices, int divisionNo)
 
             glEnd();
 
-
-//        glBegin(GL_TRIANGLE_STRIP);
-//
-//        /*vertex at middle of end */
-//
-//        glVertex3f(0.0, 0.0, halfLength);
-//
-//        /*vertices at edges of circle*/
-//        glVertex3f(points[j].x, points[j].y, points[j].z);
-//        glVertex3f(points[j+1].x, points[j+1].y, points[j+1].y);
-//
-////        glVertex3f(radius*cos(theta), halfLength, radius*sin(theta));
-////        glVertex3f (radius*cos(nextTheta), halfLength, radius*sin(nextTheta));
-//
-//        glColor3f(1,0,1);
-//        /* the same vertices at the bottom of the cylinder*/
-//        glVertex3f(points[j].x, points[j].y, points[j].z);
-//        glVertex3f(points[j+1].x, points[j+1].y, points[j+1].z);
-//
-//        glVertex3f(0.0,0, -halfLength);
-//        glEnd();
         }
     }
     glPopMatrix();
 }
+*/
 
 
 
-
-void drawSphereToFromCube(double cubeLength, int radius)
+/*void drawSphereToFromCube(double cubeLength, int radius)
 {
     int stacks = 20;
     int slices = 20;
@@ -367,7 +1146,7 @@ void drawSphereToFromCube(double cubeLength, int radius)
         }
 
         /*side cylinders*/
-        for( j=0; j<=2; j++)
+        /*for( j=0; j<=2; j++)
         {
             if(j==1)
                 glRotatef(90,1,0,0);
@@ -415,15 +1194,15 @@ void drawSphereToFromCube(double cubeLength, int radius)
             glPushMatrix();
             glTranslatef(0,0,-len);
             drawSquare(len-radius);
-            glPopMatrix();
+            glPopMatcheckBoardrix();
 
         }
         glPopMatrix();
     }
     glPopMatrix();
-}
+}*/
 
-void drawCircle(double radius,int segments)
+/*void drawCircle(double radius,int segments)
 {
     int i;
     struct Point points[100];
@@ -444,10 +1223,10 @@ void drawCircle(double radius,int segments)
         }
         glEnd();
     }
-}
+}*/
 
 
-void drawAxes_()
+/*void drawAxes_()
 {
     if(drawAxes == 1)
     {
@@ -472,10 +1251,10 @@ void drawAxes_()
         glEnd();
     }
 
-}
+}*/
 
 
-void drawGrid_()
+/*void drawGrid_()
 {
 
     int i;
@@ -501,7 +1280,7 @@ void drawGrid_()
         glEnd();
     }
 }
-
+*/
 
 void specialKeyListener(int key, int x, int y)
 {
@@ -594,10 +1373,6 @@ void keyboardListener(unsigned char key, int x, int y)
         l=crossProduct(u,r);
         angle = tempAngle;
 
-            /*
-             this method of 2d rotation didn't work
-            */
-
         break;
 
         case '2':
@@ -673,6 +1448,20 @@ void keyboardListener(unsigned char key, int x, int y)
         drawGrid = 1- drawGrid;
         break;
 
+        case '0':
+        new_u = u;
+        new_u.normalize();
+
+        new_r = r;
+        new_r.normalize();
+
+        new_l = l;
+        new_l.normalize();
+
+        new_pos = pos;
+        generatePoints();
+        break;
+
         default:
         break;
     }
@@ -695,7 +1484,7 @@ void init()
 
     pos.x = 100;
     pos.y = 100;
-    pos.z = 0;
+    pos.z = 50;
 
     l.x = -1/sqrt(2);
     l.y = -1/sqrt(2);
@@ -724,17 +1513,17 @@ void init()
 }
 
 
-void readInput()
+void loadTestData()
 {
-    std::cout<<"in readInput\n";
+    std::cout<<"in loadTestData\n";
 
     std::cin>>recursionLevel;
     std::cout<<"recursionLevel "<<recursionLevel<<std::endl;
-    std::cin>>screenWidth;
-    screenHeight=screenWidth;
-    std::cout<<"screenWidth "<<screenWidth<<std::endl;
+    std::cin>>number_of_pixels;
     
-    //checkBoard = CheckBoard(screenHeight,screenWidth);
+    std::cout<<"number_of_pixels "<<number_of_pixels<<std::endl;
+    
+    checkBoard = CheckBoard(number_of_pixels,number_of_pixels);
     int totalObj;
     std::cin>>totalObj;
     std::cout<<"totalObj "<<totalObj<<std::endl;
@@ -747,26 +1536,27 @@ void readInput()
         
         if(type=="sphere")  {
             Sphere mySphere;
-            std::cin>>mySphere.center.x>>mySphere.center.y>>mySphere.center.z;
-            std::cout<<mySphere.center.x<<" "<<mySphere.center.y<<" "<<mySphere.center.z<<"\n";
+            std::cin>>mySphere.sphereCenter.x>>mySphere.sphereCenter.y>>mySphere.sphereCenter.z;
+            std::cout<<mySphere.sphereCenter.x<<" "<<mySphere.sphereCenter.y<<" "<<mySphere.sphereCenter.z<<"\n";
 
-            std::cin>>mySphere.rad;
-            std::cout<<mySphere.rad<<"\n";
+            std::cin>>mySphere.radius;
+            std::cout<<mySphere.radius<<"\n";
 
-            std::cin>>mySphere.c.r>>mySphere.c.g>>mySphere.c.b;
-            std::cout<<"COLLLL: "<<mySphere.c.r<<" "<<mySphere.c.g<<" "<<mySphere.c.b<<"\n";
-           
+            std::cin>>mySphere.sphereColor.r>>mySphere.sphereColor.g>>mySphere.sphereColor.b;
+            std::cout<<"sphere color: "<<mySphere.sphereColor.r<<" "<<mySphere.sphereColor.g<<" "<<mySphere.sphereColor.b<<"\n";
+
             std::cin>>mySphere.amb>>mySphere.diffuse>>mySphere.spec>>mySphere.refl;
             std::cin>>mySphere.shine;
             std::cout<<"shine: "<<mySphere.shine<<"\n";
-            /*
-            sp.read();
-            spheres.push_back(sp);*/
+            
+            all_Spheres.push_back(mySphere);
         }
         else if(type == "pyramid")  {
+
             Point point;
             double width, height;
             Color color;
+            
             double am,df,spc, refl,shn;
             std::cin>>point.x>>point.y>>point.z;
             std::cout<<point.x << " " <<point.y << " " <<point.z << " \n";  
@@ -785,13 +1575,14 @@ void readInput()
 
             std::cout<<"py: "<<shn<<"\n";
 
-/*            Pyramid py(lp,w,h,c);
-            py.amb = am;
+            Pyramid myPyramid(point,width,height,color);
+            /*py.amb = am;
             py.diffuse = df;
             py.spec = spc;
             py.refl = refl;Point
-            py.shine = shn;
-            pyramids.push_back(py);*/
+            py.shine = shn;*/
+            all_Pyramids.push_back(myPyramid);
+            printWhatsStored();
         }
     }
 
@@ -831,15 +1622,33 @@ void display()
 
     ///add objects from here
 
-    drawAxes_();
-    drawGrid_();
+    //drawAxes_();
+    //drawGrid_();
 
 
     //drawSphereToFromCube(cubeLength,sphereRadius);
 
+    /*Color c(1,0,0);
+    Point p(0,0,0);
+    Square sq(p,10,c);
+    sq.drawSquare();*/
+    
+    for (int i = 0; i < all_Pyramids.size(); ++i)
+    {
+     all_Pyramids[i].drawPyramid();
+ }
+
+ for (int i = 0; i < all_Spheres.size(); ++i)
+ {
+     all_Spheres[i].drawSphere();
+ }
+
+
+ checkBoard.drawCheckBoard();
+
 
     ///flush
-    glutSwapBuffers();
+ glutSwapBuffers();
 
 }
 void animate()
@@ -857,8 +1666,8 @@ int main(int argc, char *argv[])
 
 
     freopen("description.txt","r",stdin);
-    freopen("testing2.txt","w",stdout);
-    readInput();
+    //freopen("testing2.txt","w",stdout); --> error diche keno
+    loadTestData();
     std::cout<<"in main\n";
 
 
@@ -882,3 +1691,5 @@ int main(int argc, char *argv[])
     return 0;
 
 }
+
+
