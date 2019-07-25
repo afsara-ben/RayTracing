@@ -25,11 +25,12 @@ int transY[]= {1,1,-1,-1,1,1,-1,-1};
 int transZ[]= {1,1,1,1,-1,-1,-1,-1};
 
 double nearDist = 1;
-double farDist = 1000;
+double farayDirist = 1000;
 double fovY = 90;
 double fovX = fovY;
 
 
+//double sceneX, sceneY;
 double sceneX, sceneY;
 
 //for ray tracing variables
@@ -42,7 +43,7 @@ double recursionLevel;
 //Color imageMap[2002][2002];
 //Color sourcePower;
 
-#define CHECKBOARD 0
+#define CHECKBOArayDir 0
 #define PYRAMID 1
 #define SPHERE 2
 #define EYE 3
@@ -296,6 +297,10 @@ Point pos,u,r,l; //camera position
 Point new_pos, new_l, new_r, new_u;
 std::vector<std::vector<Point>> pointBuffer;
 
+void generatePixelPoints();
+void showBitmapImage(std::vector<std::vector<Color>> pixelBuffer);
+Color rayIntersection(Point BufferPoint,Point rayDir,int depth);
+void generate_rays();
 
 struct Ray
 {
@@ -393,11 +398,11 @@ struct Square
 
     }
 
-    Square(Point point0, Point point1, Point point2, Point point3, Color color)
+    Square(Point point0, Point poinr1, Point poinr2, Point point3, Color color)
     {
         p[0]= point0;
-        p[1]= point1;
-        p[2]= point2;
+        p[1]= poinr1;
+        p[2]= poinr2;
         p[3]= point3;
 
         c= color;
@@ -405,17 +410,17 @@ struct Square
 
     Square(const Square &sq)
     {
-     p[0]= sq.p[0];
-     p[1]= sq.p[1];
-     p[2]= sq.p[2];
-     p[3]= sq.p[3];
+       p[0]= sq.p[0];
+       p[1]= sq.p[1];
+       p[2]= sq.p[2];
+       p[3]= sq.p[3];
 
-     c= sq.c;
+       c= sq.c;
 
- }
+   }
 
- void drawSquare()
- {
+   void drawSquare()
+   {
         //std::cout<<"in drawSquare\n";
 
     glColor3f(c.r,c.g,c.b);
@@ -485,11 +490,18 @@ struct Sphere
         std::cout<<radius<<"\n";
     }
 
-    vector normal_on_sphere(Point p)
+    Point normal_on_sphere(Point p)
     {
         Point n(p.x-sphereCenter.x, p.y-sphereCenter.y, p.z-sphereCenter.z);
         n.normalize();
         return n;
+    }
+
+    Point getNormal(Point P)
+    {
+        Point v(P.x-sphereCenter.x,P.y-sphereCenter.y,P.z-sphereCenter.z);
+        v.normalize();
+        return v;
     }
 
 };
@@ -654,260 +666,179 @@ struct Object
     }
 };
 
-void generatePoints()
+
+void generatePixelPoints()
 {
-    std::cout<<"in generate points\n";
-    Point midpoint;
-    
-    midpoint.x = new_pos.x + new_l.x*nearDist;
-    midpoint.y = new_pos.y + new_l.y*nearDist;
-    midpoint.z = new_pos.z + new_l.z*nearDist;
+   
+    Point midPoint;
 
-    std::cout<<"midpoint is \n";
-    midpoint.printVector();
+    midPoint.x=new_pos.x + new_l.x*nearDist;
+    midPoint.y=new_pos.y + new_l.y*nearDist;
+    midPoint.z=new_pos.z + new_l.z*nearDist;
 
-    sceneY = 2*nearDist*Tan(fovY/2);
-    sceneX = 2*nearDist*Tan(fovX/2);
+    sceneY=2*nearDist*tan((pi/180.0)*(fovY/2));
+    sceneX=2*nearDist*tan((pi/180.0)*(fovX/2));
 
-    std::cout<<"sceneX " << sceneX << " sceneY " << sceneY <<"\n";
-    
     double pixel_width = sceneX/number_of_pixels;
     double pixel_height = sceneY/number_of_pixels;
-
-    std::cout<<"pixel_width " << pixel_width <<" pixel height " << pixel_height <<"\n";
-    double halfSceneX = sceneX/2;
-    double halfSceneY = sceneY/2;
-
-    Point temp;
-    temp.x = midpoint.x + new_u.x*halfSceneY;
-    temp.y = midpoint.y + new_u.y*halfSceneY;
-    temp.z = midpoint.z + new_u.z*halfSceneY;
-
-    Point middleTop(temp.x,temp.y,temp.z);
-
-    temp.x = middleTop.x-new_r.x*halfSceneX;
-    temp.y = middleTop.y-new_r.y*halfSceneX;
-    temp.z = middleTop.z-new_r.z*halfSceneX;
-
-    Point startPoint(temp.x,temp.y,temp.z);
-
-    //first pixel er midpoint ber kortisi
-    startPoint.x = startPoint.x-new_u.x*0.5*pixel_height + new_r.x*0.5*pixel_width;
-    startPoint.y = startPoint.y-new_u.y*0.5*pixel_height + new_r.y*0.5*pixel_width;
-    startPoint.z = startPoint.x-new_u.z*0.5*pixel_height + new_r.z*0.5*pixel_width;
+    
     
 
-    //i = row, j = col
-    for (int i = 0; i < number_of_pixels; ++i)
+    Point midUp(midPoint.x+new_u.x*(sceneY/2),midPoint.y+new_u.y*(sceneY/2),midPoint.z+new_u.z*(sceneY/2));
+    Point startPoint(midUp.x-new_r.x*(sceneX/2),midUp.y-new_r.y*(sceneX/2),midUp.z-new_r.z*(sceneX/2));
+
+    startPoint.x=startPoint.x - new_u.x*0.5*pixel_height + new_r.x*0.5*pixel_width;
+    startPoint.y=startPoint.y - new_u.y*0.5*pixel_height + new_r.y*0.5*pixel_width;
+    startPoint.z=startPoint.z - new_u.z*0.5*pixel_height + new_r.z*0.5*pixel_width;
+
+
+    for(int i=0;i<number_of_pixels;i++)
     {
+    
         std::vector<Point> tempVec;
-        for (int j = 0; j < number_of_pixels; ++j)
+        for(int j=0;j<number_of_pixels;j++)
         {
-            temp.x = startPoint.x + new_r.x*j*pixel_width - new_u.x*i*pixel_height;
-            temp.y = startPoint.y + new_r.y*j*pixel_width - new_u.y*i*pixel_height;
-            temp.z = startPoint.z + new_r.z*j*pixel_width - new_u.z*i*pixel_height;
-            
-            Point generated_point(temp.x,temp.y,temp.z);
-
-            tempVec.push_back(generated_point);
+            Point p(startPoint.x+new_r.x*j*pixel_width-new_u.x*i*pixel_height, startPoint.y+new_r.y*j*pixel_width-new_u.y*i*pixel_height,  startPoint.z+new_r.z*j*pixel_width-new_u.z*i*pixel_height);        
+            tempVec.push_back(p);
         }
-
         pointBuffer.push_back(tempVec);
-        tempVec.clear();
-
+        tempVec.clear();       
     }
 
-    //print generated points
 
-    std::cout<<"\nprinting pixels\n";
-    pointBuffer[0][0].printVector();
-    pointBuffer[0][number_of_pixels-1].printVector();
-    pointBuffer[0][(number_of_pixels/2) -1].printVector();
-
-    std::cout<<"\n";
-    pointBuffer[number_of_pixels-1][0].printVector();
-    pointBuffer[number_of_pixels-1][number_of_pixels-1].printVector();
-    pointBuffer[number_of_pixels-1][(number_of_pixels/2) -1].printVector();
-    std::cout<<"\nend of printing pixels\n";
-    
-    generateRays();
-
+    generate_rays();
 }
+
+void generate_rays()
+{
+    std::vector<std::vector<Color>> pixel2D_buffer;
+    for(int i=0;i<number_of_pixels;i++)
+    {
+        std::vector<Color> pixel_vec;
+        for(int j=0;j<number_of_pixels;j++)
+        {
+            Point rayDir(pointBuffer.at(i).at(j).x-new_pos.x, pointBuffer.at(i).at(j).y-new_pos.y, pointBuffer.at(i).at(j).z-new_pos.z);
+            
+            pixel_vec.push_back(rayIntersection(pointBuffer.at(i).at(j),rayDir,3)); 
+        }
+        pixel2D_buffer.push_back(pixel_vec);
+    }
+    
+    showBitmapImage(pixel2D_buffer);
+    std::cout<<"bmp image OK :\n";
+}
+
+//generates pixel points from intersection of ray and object
+Color rayIntersection(Point BufferPoint,Point rayDir,int depth)
+{
+    if(depth==0){
+        Color c(0,0,0);
+        return c;
+    }
+
+    //double maxdist=farClip(rayDir);
+    rayDir.normalize();
+    double min_t=100000;
+    Color ret_pixel(0,0,0);
+    Point P, normal;
+    bool does_it_intersect=false;
+    
+    bool isSphere=false;
+    
+    bool checker=false;
+    double ambient,diffuse,specular,reflection,shininess;
+    ambient=0;
+     
+    for(int i=0;i<all_Spheres.size();i++)
+    {
+        Point center=all_Spheres.at(i).sphereCenter;
+        Point O_minus_C(BufferPoint.x-center.x,BufferPoint.y-center.y,BufferPoint.z-center.z);
+        
+                    //a=d.d , d is the ray direction
+                    //b=2*(O-c)*d , O is origin, c is center of sphere
+                    //c=(O-c)^2 - d^2
+                    //find the two roots of this equation
+        
+        double a=1; 
+        double b=2*(rayDir.x*O_minus_C.x+rayDir.y*O_minus_C.y+rayDir.z*O_minus_C.z);
+        double c=(O_minus_C.x*O_minus_C.x+O_minus_C.y*O_minus_C.y+O_minus_C.z*O_minus_C.z)-pow(all_Spheres.at(i).radius,2);
+        
+        double discriminant = (pow(b,2)- 4*a*c);
+        double root= sqrt(pow(b,2)- 4*a*c);
+        double r1=(-b+root)/(2*a);
+        double r2=(-b-root)/(2*a);
+
+        //std::cout<< (pow(b,2)- 4*a*c) << " ";
+        if(discriminant <0) continue;
+        double temp_t=-1;
+
+        if(r1<0 && r2<0) continue;
+        if(r1>0 && r2<0) temp_t=r1;
+        if(r1<0 && r2>0) temp_t=r2;
+        if(r1>0 && r2>0) temp_t=fmin(r1,r2);
+
+        std::cout<<"outside if\n";
+        if(temp_t > 0 && temp_t < min_t && temp_t <= farayDirist)
+        {
+            std::cout<<"in if\n";
+            min_t=temp_t;
+            does_it_intersect=true;
+            Point intersecting_at(BufferPoint.x+min_t*rayDir.x,BufferPoint.y+min_t*rayDir.y,BufferPoint.z+min_t*rayDir.z);
+            //P=intersection;
+            normal=all_Spheres.at(i).normal_on_sphere(intersecting_at);
+            ret_pixel=all_Spheres.at(i).sphereColor;
+            
+            isSphere=true;
+            
+        }
+
+        
+        else continue;
+    }
+
+
+    //checker board ray intersection
+    //O+td
+    /*Point O = BufferPoint;
+    rayDir.normalize();
+    double t_scalar = -O.z/rayDir.z;
+
+    if(t_scalar > 0 && t_scalar < min_t)
+    {
+        min_t = t;
+        does_it_intersect = true;
+        Point intersecting_at(O.x + t*rayDir.x, O.y + t*rayDir.y, O.z + t*rayDir.z);
+        normal = checkBoard.getNormal();
+    }*/
+
+    return ret_pixel;
+}
+
+
+
+void showBitmapImage(std::vector<std::vector<Color>> pixelBuffer)
+{
+    bitmap_image image(number_of_pixels, number_of_pixels);
+    for (int x = 0; x < number_of_pixels; x++) {
+        for (int y = 0; y < number_of_pixels; y++) {
+
+            double r = std::min(pixelBuffer[y][x].r,1.0)*255;
+            double g = std::min(pixelBuffer[y][x].g,1.0)*255;
+            double b = std::min(pixelBuffer[y][x].b,1.0)*255;
+
+            image.set_pixel(x, y, r, g, b);
+        }
+    }
+    image.save_image("testout.bmp");
+}
+
 
 double farClip(Point p)
 {
     double dist=p.magnitude();
-    double x=(farDist/nearDist)*dist;
+    double x=(farayDirist/nearDist)*dist;
     return x-dist;
 }
-
-Color generate_pixels(Point bufferPoint, Point rayDir, int depth)
-{
-
-    //std::cout<<"in generate_pixels\n";
-   /* if(depth == 0)
-    {
-        Color c(0,0,0);
-        return c;
-    }*/
-
-
-    //double dist = rayDir.magnitude();
-    //double x = (farDist/nearDist)*dist; //?
-    //double maxDist = x-dist; //??
-
-    //double maxDist = farClip(rayDir);
-
-
-    rayDir.normalize();
-
-    double t_min = 100000;
-    Color color_pixel(0,0,0);
-
-    Point pixel_p, pixel_normal;
-    
-    bool does_it_intersect = false;
-    bool isSphere = false;
-
-
-
-    for (int i = 0; i < all_Spheres.size(); ++i)
-    {
-        Point center = all_Spheres[i].sphereCenter;
-        Point O_minus_C(bufferPoint.x-center.x, bufferPoint.y-center.y,bufferPoint.z-center.z);
-        
-        //O_minus_C.printVector();
-        
-        double a = 1; //d.d
-
-        double b = 2*(O_minus_C.x * rayDir.x + O_minus_C.y * rayDir.y + O_minus_C.z * rayDir.z );
-
-        double c = (O_minus_C.x*O_minus_C.x + O_minus_C.y*O_minus_C.y + O_minus_C.z*O_minus_C.z) - pow(all_Spheres[i].radius, 2) ;
-
-        double discriminant = (pow(b,2)-4*a*c);
-        double d = sqrt(pow(b,2)-4*a*c);
-
-        /*double r1 = (-b+root)/(2*a);
-        double r2 = (-b-root)/(2*a);*/
-        double t1=(-b+d)/(2*a);
-        double t2=(-b-d)/(2*a);
-
-        //std::cout<< discriminant<<  " ";
-        if((pow(b,2)-4*a*c) < 0) continue;
-
-        double temp_t = -1; //
-
-
-        //taking the nearest t point
-        /*if(r1 < 0 && r2 < 0) continue;
-        if(r1 > 0 && r2 < 0) temp_t = r1;
-        if(r1 < 0 && r2 > 0) temp_t = r2;
-        if(r1 > 0 && r2 > 0) temp_t = fmin(r1,r2);*/
-
-        std::cout<<"hwre\n";
-        if(t1<0 && t2<0) continue;
-        if(t1>0 && t2<0) temp_t=t1;
-        if(t1<0 && t2>0) temp_t=t2;
-        if(t1>0 && t2>0) temp_t=fmin(t1,t2);
-
-
-        std::cout<<"outside if\n";
-        if(temp_t > 0 && temp_t < t_min && temp_t <= farDist)
-        {
-            std::cout<<"in if\n";
-            t_min = temp_t;
-            does_it_intersect = true;
-
-            Point intersection_point(bufferPoint.x+t_min*rayDir.x, bufferPoint.y+t_min*rayDir.y, bufferPoint.z+t_min*rayDir.z);
-            pixel_p = intersection_point;
-            pixel_normal = all_Spheres[i].normal_on_sphere(pixel_p);
-            color_pixel = all_Spheres[i].sphereColor;
-
-            //code for ambience hobe ....
-
-            isSphere = true;
-
-        }
-
-        else continue;
-
-    }
-
-    /*color_pixel.r=std::fmax(color_pixel.r,0.0);
-    color_pixel.g=std::fmax(color_pixel.g,0.0);
-    color_pixel.b=std::fmax(color_pixel.b,0.0);*/
-
-    return color_pixel;
-}
-
-void generate_image(std::vector<std::vector<Color> > pixelBuffer)
-{
-
-    std::cout<<"in generate_image\n";
-    bitmap_image image(number_of_pixels,number_of_pixels);
-    for (int x = 0; x < number_of_pixels; x++) {
-        for (int y = 0; y < number_of_pixels; y++) {
-
-            double r = fmin(pixelBuffer[y][x].r,1);
-            //std::cout<<pixelBuffer[0][0].r <<"\n";
-            double g = fmin(pixelBuffer[y][x].g,1);
-            double b = fmin(pixelBuffer[y][x].b,1);
-
-            image.set_pixel(y,x,r,g,b);
-        }
-    }
-    image.save_image("testout.bmp");
-
-}
-void generateRays()
-{
-
-    std::cout<<"in generateRays\n";
-    //The direction vector of the ray is
-    //pointBuffer[x][y] – cameraPosition.
-
-    std::vector<std::vector<Color> > pixelBuffer; //2d pixel matrix
-    for (int i = 0; i < number_of_pixels; ++i)
-    {
-        std::vector<Color> pixels;
-        for (int j = 0; j < number_of_pixels; ++j)
-        {
-
-            Point temp;
-            temp.x = pointBuffer[i][j].x - new_pos.x; //pointBuffer[i][j] - camerapos
-            temp.y = pointBuffer[i][j].y - new_pos.y;
-            temp.z = pointBuffer[i][j].z - new_pos.z;
-            
-            Point rayDir(temp.x,temp.y,temp.z);
-            pixels.push_back(generate_pixels(pointBuffer[i][j], rayDir, 3));
-        }
-
-        for (int i = 0; i < 5; ++i)
-        {
-           // pixels[i].printColor();
-        }
-
-        pixelBuffer.push_back(pixels);
-
-    }
-
-    /*for (int i = 0; i < 5; ++i)
-    {
-        for (int j = 0; j < 5; ++j)
-        {
-
-            pixelBuffer[i][j].printColor();
-    // pixelBuffer[i][number_of_pixels-].printColor();
-    // pixelBuffer[0][(number_of_pixels-1)/2].printColor();
-
-        }
-    }*/
-
-
-    generate_image(pixelBuffer);
-    std::cout<<"out of generateRays\n";
-}
-
 
 
 
@@ -1027,7 +958,7 @@ void drawNormalSphere(double radius, int slices, int stacks)
         int i,j;
         double h,r;
 
-        glRotatef(90*(divisionNo%4),0,0,1);
+        glO_minus_Ctatef(90*(divisionNo%4),0,0,1);
         //generate points
         for(i=0; i<=stacks; i++) // <= na diye < dile kibhabe alada hoy
         {
@@ -1088,7 +1019,7 @@ void drawNormalSphere(double radius, int slices, int stacks)
         struct Point points[100];
         int halfLength=Length/2;
 
-        glRotatef(90*(divisionNo),0,0,1);
+        glO_minus_Ctatef(90*(divisionNo),0,0,1);
 
         //generate points
         for( i=0; i<=slices; i++)
@@ -1149,9 +1080,9 @@ void drawNormalSphere(double radius, int slices, int stacks)
         /*for( j=0; j<=2; j++)
         {
             if(j==1)
-                glRotatef(90,1,0,0);
+                glO_minus_Ctatef(90,1,0,0);
             if(j==2)
-                glRotatef(90,0,1,0);
+                glO_minus_Ctatef(90,0,1,0);
 
 
             for(int i=0; i<4; i++)
@@ -1175,9 +1106,9 @@ void drawNormalSphere(double radius, int slices, int stacks)
             {
                 glPushMatrix();
                 {
-                    glRotatef(90*i,0,0,1);
+                    glO_minus_Ctatef(90*i,0,0,1);
                     glTranslatef(len,0,0);
-                    glRotatef(90,0,1,0);
+                    glO_minus_Ctatef(90,0,1,0);
 
                     drawSquare(len-radius);
                 }
@@ -1289,7 +1220,7 @@ void specialKeyListener(int key, int x, int y)
 
     switch(key)
     {
-        //backward
+        //backwarayDir
         case GLUT_KEY_DOWN :
 
         pos.x -= l.x * fraction;
@@ -1297,7 +1228,7 @@ void specialKeyListener(int key, int x, int y)
 
         break;
 
-            //forward
+            //forwarayDir
         case GLUT_KEY_UP :
 
         pos.x += l.x * fraction;
@@ -1459,7 +1390,7 @@ void keyboardListener(unsigned char key, int x, int y)
         new_l.normalize();
 
         new_pos = pos;
-        generatePoints();
+        generatePixelPoints();
         break;
 
         default:
@@ -1635,20 +1566,20 @@ void display()
     
     for (int i = 0; i < all_Pyramids.size(); ++i)
     {
-     all_Pyramids[i].drawPyramid();
- }
+       all_Pyramids[i].drawPyramid();
+   }
 
- for (int i = 0; i < all_Spheres.size(); ++i)
- {
-     all_Spheres[i].drawSphere();
- }
+   for (int i = 0; i < all_Spheres.size(); ++i)
+   {
+       all_Spheres[i].drawSphere();
+   }
 
 
- checkBoard.drawCheckBoard();
+   checkBoard.drawCheckBoard();
 
 
     ///flush
- glutSwapBuffers();
+   glutSwapBuffers();
 
 }
 void animate()
