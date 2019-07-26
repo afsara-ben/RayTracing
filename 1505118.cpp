@@ -44,8 +44,8 @@ double recursionLevel;
 
 
 
-//Color imageMap[2002][2002];
-//Color sourcePower;
+//Color imageMap[2002][2002]; //?
+//Color sourcePower; //?
 
 
 
@@ -70,27 +70,32 @@ void display();
 void animate();
 
 
-inline double degToRad(double ang) {
+inline double degToRad(double ang)
+{
     return ang * pi / 180.0;
 }
 
-static inline bool isNearlyEqual(const double &a, const double &b) {
+static inline bool isNearlyEqual(const double &a, const double &b)
+{
     return abs(a - b) < EPS;
 }
 
-float Cos(float angle) {
+float Cos(float angle)
+{
     float var = cos(degToRad(angle));
     if (isNearlyEqual(var, 0)) var = 0;
     return var;
 }
 
-float Sin(float angle) {
+float Sin(float angle)
+{
     float var = sin(degToRad(angle));
     if (isNearlyEqual(var, 0)) var = 0;
     return var;
 }
 
-float Tan(float angle) {
+float Tan(float angle)
+{
     float var = tan(degToRad(angle));
     if (isNearlyEqual(var, 0)) var = 0;
     return var;
@@ -102,7 +107,7 @@ float Tan(float angle) {
 struct  Color
 {
     double r,g,b;
-    Color(){}
+    Color() {}
     Color(double rr, double gg, double bb)
     {
         r=rr;
@@ -117,7 +122,8 @@ struct  Color
         b=c.b;
     }
 
-    Color operator *(const double &scalar) const {
+    Color operator *(const double &scalar) const
+    {
         Color res;
 
         res.r= r * scalar;
@@ -127,7 +133,8 @@ struct  Color
         return res;
     }
 
-    Color operator +(const Color &v2) const {
+    Color operator +(const Color &v2) const
+    {
         Color res;
 
         res.r= r + v2.r;
@@ -137,7 +144,8 @@ struct  Color
         return res;
     }
 
-    Color operator -(const Color &v2) const {
+    Color operator -(const Color &v2) const
+    {
         Color res;
 
         res.r= r - v2.r;
@@ -157,7 +165,8 @@ struct  Color
         return res;
     }
 
-    bool operator == (const Color &c) const {
+    bool operator == (const Color &c) const
+    {
         if(abs(r-c.r) < EPS && abs(g-c.g) < EPS && abs(b-c.b) < EPS)
         {
             return true;
@@ -167,7 +176,7 @@ struct  Color
 
     void printColor()
     {
-        std::cout<<"( " << r << ", " << g << ", " << b <<" )\n";  
+        std::cout<<"( " << r << ", " << g << ", " << b <<" )\n";
     }
 
 };
@@ -182,9 +191,10 @@ struct vector
 
 
     //constructors
-    vector(){}
+    vector() {}
 
-    vector(double vx, double vy, double vz) {
+    vector(double vx, double vy, double vz)
+    {
 
         x = vx;
         y = vy;
@@ -192,14 +202,16 @@ struct vector
         dimension = 3;
     }
 
-    vector (const vector &v) {
+    vector (const vector &v)
+    {
         x = v.x;
         y = v.y;
         z = v.z;
     }
 
     //methods
-    bool operator == (const vector &v) const {
+    bool operator == (const vector &v) const
+    {
 
         //?
         if(!abs(x-v.x) > EPS) return true;
@@ -211,9 +223,10 @@ struct vector
 
 
     //scalar  multiplication
-    vector operator *(const double &scalar)  const{
+    vector operator *(const double &scalar)  const
+    {
         vector res;
-    // cout << "scalar is " << scalar << endl;
+        // cout << "scalar is " << scalar << endl;
         res.x = x * scalar;
         res.y = y * scalar;
         res.z = z * scalar;
@@ -222,7 +235,8 @@ struct vector
 
 
     //cross product
-    vector operator *(const vector &vec2) const{
+    vector operator *(const vector &vec2) const
+    {
 
         vector res;
         res.x = y * vec2.z - vec2.y * z;
@@ -232,7 +246,8 @@ struct vector
         return res;
     }
 
-    vector operator +(const vector &v2) const {
+    vector operator +(const vector &v2) const
+    {
 
         vector ret;
         ret.x = x + v2.x;
@@ -241,7 +256,8 @@ struct vector
         return ret;
     }
 
-    vector operator -(const vector &v2) const {
+    vector operator -(const vector &v2) const
+    {
 
         vector ret;
         ret.x = x - v2.x;
@@ -257,7 +273,8 @@ struct vector
     }
 
 
-    void normalize() {
+    void normalize()
+    {
 
         double val = this->magnitude();
         //if magnitude less than EPS, return;
@@ -266,7 +283,7 @@ struct vector
         y = y / val;
         z = z / val;
 
-    //cout << "\nnormalizing\n[ " << p.x << " " << p.y << " " << p.z << " " << p.w << " ] \n";
+        //cout << "\nnormalizing\n[ " << p.x << " " << p.y << " " << p.z << " " << p.w << " ] \n";
 
     }
 
@@ -280,7 +297,8 @@ struct vector
 
 typedef vector Point;
 
-double dot(const Point &vec1, const Point &vec2) {
+double dot(const Point &vec1, const Point &vec2)
+{
 
     double res = 0;
 
@@ -295,16 +313,17 @@ double det(Point A, Point B, Point C)
     Point res;
     res.x = A.x * (B.y*C.z - C.y*B.z);
     res.y =-A.y * (B.x*C.z - C.x*B.z);
-    res.z = A.z * (B.x*C.y - C.x*B.y);   
+    res.z = A.z * (B.x*C.y - C.x*B.y);
 
     double ret = res.x + res.y + res.z;
     return ret;
 }
 
-Point findNormal(Point p) {
+Point findNormal(Point p)
+{
 
     double val = p.magnitude();
-        //if magnitude less than EPS, return;
+    //if magnitude less than EPS, return;
     if(val<EPS) return p;
     p.x = p.x / val;
     p.y = p.y / val;
@@ -353,26 +372,51 @@ struct Triangle
     Point p[3];
     Color c;
 
+    double ambient_coef, diffuse_coef, spec_coef, reflec_coef;
+    double specular_exponent;
+
     //constructors
 
-    Triangle(){}
+    Triangle() {}
 
 
-    Triangle(Point x, Point y, Point z) {
+    Triangle(Point x, Point y, Point z)
+    {
         p[0] = x;
         p[1] = y;
         p[2] = z;
 
     }
 
-    Triangle(Point x, Point y, Point z, Color triColor) {
+    Triangle(Point x, Point y, Point z, Color triColor)
+    {
         p[0] = x;
         p[1] = y;
         p[2] = z;
         c = triColor;
-        
+
     }
 
+    Triangle(const Triangle &s)
+    {
+
+        //std::cout<<"\nin triangle copy constructor\n";
+        c=s.c;
+
+        for (int i = 0; i < 3; ++i)
+        {
+             p[i]=s.p[i];
+        }
+
+
+        ambient_coef = s.ambient_coef;
+        diffuse_coef = s.diffuse_coef;
+        specular_exponent = s.specular_exponent;
+        reflec_coef = s.reflec_coef;
+        spec_coef = s.spec_coef;
+
+
+    }
 
 
     void drawTriangle()
@@ -397,6 +441,9 @@ struct Triangle
         for (int i = 0; i < 3; ++i)
         {
             std::cout<<p[i].x << " " << p[i].y << " " << p[i].z << "\n";
+            std::cout<<" triangle amb etc \n";
+            std::cout<<ambient_coef<<" "<<diffuse_coef <<" " << spec_coef<< " " << reflec_coef << " "<<specular_exponent<<"\n\n";
+
         }
     }
 
@@ -410,7 +457,10 @@ struct Square
     Color c;
     double width = 10;
 
-    Square(){}
+    double ambient_coef, diffuse_coef, spec_coef, reflec_coef;
+    double specular_exponent;
+
+    Square() {}
     Square(Point bottomLeft, double w, Color myColor)
     {
         p[0]=bottomLeft;
@@ -418,7 +468,7 @@ struct Square
         p[2]=p[1] + Point(0, width,0);
         p[3]=p[0] + Point(0,width,0);
         c = myColor;
-        
+
 
     }
 
@@ -431,8 +481,29 @@ struct Square
 
         c= color;
         width = distanceBetweenPoints(point0, point1);
+
     }
 
+    Square(const Square &s)
+    {
+
+        //std::cout<<"\nin square copy constructor\n";
+        c=s.c;
+
+        for (int i = 0; i < 4; ++i)
+        {
+            p[i]=s.p[i];
+        }
+
+        width = s.width;
+        ambient_coef = s.ambient_coef;
+        diffuse_coef = s.diffuse_coef;
+        specular_exponent = s.specular_exponent;
+        reflec_coef = s.reflec_coef;
+        spec_coef = s.spec_coef;
+
+
+    }
     double distanceBetweenPoints(Point p1, Point p2)
     {
         double x = pow(p1.x-p2.x,2); //x^2
@@ -448,7 +519,7 @@ struct Square
 
     void drawSquare()
     {
-            //std::cout<<"in drawSquare\n";
+        //std::cout<<"in drawSquare\n";
 
         glColor3f(c.r,c.g,c.b);
         glBegin(GL_QUADS);
@@ -460,16 +531,21 @@ struct Square
         }
         glEnd();
 
-            //std::cout<<"out of drawSquare\n";
+        //std::cout<<"out of drawSquare\n";
     }
 
     void printSquare()
     {
         for (int i = 0; i < 4; ++i)
         {
-            std::cout<< p[i].x << " " << p[i].y << " " << p[i].z << " \n"; 
+            std::cout<< p[i].x << " " << p[i].y << " " << p[i].z << " \n";
+            std::cout<<" square amb etc \n";
+            std::cout<<ambient_coef<<" "<<diffuse_coef <<" " << spec_coef<< " " << reflec_coef << " "<<specular_exponent<<"\n\n";
+
         }
     }
+
+
 
 };
 
@@ -485,19 +561,28 @@ struct Sphere
 
 
     Sphere()  {}
-    
+
     Sphere(Point center, double r, Color color = Color(0,0,0))
     {
         sphereCenter = center;
         radius = r;
         sphereColor = color;
+        ambient_coef = ambient_coef;
+        diffuse_coef = diffuse_coef;
     }
 
     Sphere (const Sphere &s)
     {
+        std::cout<<"\nin sphere copy constructor\n";
         sphereCenter = s.sphereCenter;
         radius = s.radius;
         sphereColor = s.sphereColor;
+        ambient_coef = s.ambient_coef;
+        diffuse_coef = s.diffuse_coef;
+        specular_exponent = s.specular_exponent;
+        reflec_coef = s.reflec_coef;
+        spec_coef = s.spec_coef;
+
     }
 
     void drawSphere()
@@ -513,8 +598,10 @@ struct Sphere
 
     void printSphere()
     {
-        std::cout<<sphereCenter.x << " "<<sphereCenter.y << " "<<sphereCenter.z << " \n"; 
+        std::cout<<sphereCenter.x << " "<<sphereCenter.y << " "<<sphereCenter.z << " \n";
         std::cout<<radius<<"\n";
+        std::cout<<ambient_coef<<" "<<diffuse_coef <<" " << spec_coef<< " " << reflec_coef << " "<<specular_exponent<<"\n";
+
     }
 
     Point normal_on_sphere(Point p)
@@ -540,7 +627,7 @@ struct Pyramid
     double ambient_coef, diffuse_coef, spec_coef, reflec_coef;
     double specular_exponent;
 
-    Pyramid(){}
+    Pyramid() {}
     Pyramid(Point bottomLeft, double w, double h, Color c)
     {
 
@@ -571,13 +658,44 @@ struct Pyramid
             tri[i] = Triangle(pyramidTop, pyramidBase[i], pyramidBase[ (i+1)%4 ], c);
         }
 
+        ambient_coef = ambient_coef;
+        diffuse_coef = diffuse_coef;
+        specular_exponent = specular_exponent;
+        reflec_coef = reflec_coef;
+        spec_coef = spec_coef;
+
+    }
+
+    Pyramid(const Pyramid &s)
+    {
+
+        //std::cout<<"\nin pyramid copy constructor\n";
+        pyramidColor=s.pyramidColor;
+
+        for (int i = 0; i < 4; ++i)
+        {
+            this->tri[i] = s.tri[i];
+        }
+
+
+        this->square = s.square;
+
+        height=s.height;
+        width = s.width;
+
+        ambient_coef = s.ambient_coef;
+        diffuse_coef = s.diffuse_coef;
+        specular_exponent = s.specular_exponent;
+        reflec_coef = s.reflec_coef;
+        spec_coef = s.spec_coef;
+
     }
 
     //drawing the pyramid
     void drawPyramid()
     {
         glColor3f(pyramidColor.r, pyramidColor.g, pyramidColor.b);
-        
+
         //drawing the sides
         for (int i = 0; i < 4; ++i)
         {
@@ -614,7 +732,7 @@ struct ChessBoard
     double specular_exponent;
 
 
-    ChessBoard(){}
+    ChessBoard() {}
     ChessBoard(double h, double w)
     {
         height = h;
@@ -641,7 +759,8 @@ struct ChessBoard
         {
             for (int col = 0; col < cell_count; ++col)
             {
-                if((row+col)%2 == 1) {
+                if((row+col)%2 == 1)
+                {
                     glColor3f(0,0,0);
                 }
                 else
@@ -655,11 +774,11 @@ struct ChessBoard
                 glVertex3f(startPoint.x + TileWidth*row,startPoint.y + TileWidth*(col+1),startPoint.z);
                 glVertex3f(startPoint.x + TileWidth*(row+1),startPoint.y + TileWidth*(col+1),startPoint.z);
                 glVertex3f(startPoint.x + TileWidth*(row+1),startPoint.y + TileWidth*col,startPoint.z);
-                
+
                 glEnd();
             }
         }
-         //std::cout<<"out of drawChessBoard\n";
+        //std::cout<<"out of drawChessBoard\n";
     }
 
 };
@@ -692,7 +811,8 @@ struct Object
 
     }
 
-    bool operator == (const Object &obj) const {
+    bool operator == (const Object &obj) const
+    {
 
         if(object_type == obj.object_type && object_id == obj.object_id)
         {
@@ -718,8 +838,8 @@ void generatePixelPoints()
 
     double pixel_width = sceneX/number_of_pixels;
     double pixel_height = sceneY/number_of_pixels;
-    
-    
+
+
 
     Point midUp(midPoint.x+new_u.x*(sceneY/2),midPoint.y+new_u.y*(sceneY/2),midPoint.z+new_u.z*(sceneY/2));
     Point startPoint(midUp.x-new_r.x*(sceneX/2),midUp.y-new_r.y*(sceneX/2),midUp.z-new_r.z*(sceneX/2));
@@ -729,17 +849,17 @@ void generatePixelPoints()
     startPoint.z=startPoint.z - new_u.z*0.5*pixel_height + new_r.z*0.5*pixel_width;
 
 
-    for(int i=0;i<number_of_pixels;i++)
+    for(int i=0; i<number_of_pixels; i++)
     {
 
         std::vector<Point> tempVec;
-        for(int j=0;j<number_of_pixels;j++)
+        for(int j=0; j<number_of_pixels; j++)
         {
-            Point p(startPoint.x+new_r.x*j*pixel_width-new_u.x*i*pixel_height, startPoint.y+new_r.y*j*pixel_width-new_u.y*i*pixel_height,  startPoint.z+new_r.z*j*pixel_width-new_u.z*i*pixel_height);        
+            Point p(startPoint.x+new_r.x*j*pixel_width-new_u.x*i*pixel_height, startPoint.y+new_r.y*j*pixel_width-new_u.y*i*pixel_height,  startPoint.z+new_r.z*j*pixel_width-new_u.z*i*pixel_height);
             tempVec.push_back(p);
         }
         pointBuffer.push_back(tempVec);
-        tempVec.clear();       
+        tempVec.clear();
     }
 
 
@@ -749,18 +869,18 @@ void generatePixelPoints()
 void generate_rays()
 {
     std::vector<std::vector<Color>> pixel2D_buffer;
-    for(int i=0;i<number_of_pixels;i++)
+    for(int i=0; i<number_of_pixels; i++)
     {
         std::vector<Color> pixel_vec;
-        for(int j=0;j<number_of_pixels;j++)
+        for(int j=0; j<number_of_pixels; j++)
         {
             Point rayDir(pointBuffer.at(i).at(j).x-new_pos.x, pointBuffer.at(i).at(j).y-new_pos.y, pointBuffer.at(i).at(j).z-new_pos.z);
-            
-            pixel_vec.push_back(rayIntersection(pointBuffer.at(i).at(j),rayDir,3)); 
+
+            pixel_vec.push_back(rayIntersection(pointBuffer.at(i).at(j),rayDir,3));
         }
         pixel2D_buffer.push_back(pixel_vec);
     }
-    
+
     showBitmapImage(pixel2D_buffer);
     std::cout<<"bmp image OK :\n";
 }
@@ -775,27 +895,27 @@ Color rayIntersection(Point BufferPoint,Point rayDir,int depth)
     Color ret_pixel(0,0,0);
     Point P, normal;
     bool does_it_intersect=false;
-    
+
     bool isSphere=false;
-    
+
     bool checker=false;
     double amb,dif,spec,reflec,expo;
     amb=0;
 
-    for(int i=0;i<all_Spheres.size();i++)
+    for(int i=0; i<all_Spheres.size(); i++)
     {
         Point center=all_Spheres.at(i).sphereCenter;
         Point O_minus_C(BufferPoint.x-center.x,BufferPoint.y-center.y,BufferPoint.z-center.z);
-        
-                    //a=d.d , d is the ray direction
-                    //b=2*(O-c)*d , O is origin, c is center of sphere
-                    //c=(O-c)^2 - d^2
-                    //find the two roots of this equation
-        
-        double a=1; 
+
+        //a=d.d , d is the ray direction
+        //b=2*(O-c)*d , O is origin, c is center of sphere
+        //c=(O-c)^2 - d^2
+        //find the two roots of this equation
+
+        double a=1;
         double b=2*(rayDir.x*O_minus_C.x+rayDir.y*O_minus_C.y+rayDir.z*O_minus_C.z);
         double c=(O_minus_C.x*O_minus_C.x+O_minus_C.y*O_minus_C.y+O_minus_C.z*O_minus_C.z)-pow(all_Spheres.at(i).radius,2);
-        
+
         //discriminant <0; == 0; >0 cases
         double discriminant = (pow(b,2)- 4*a*c);
         double root= sqrt(discriminant);
@@ -808,44 +928,49 @@ Color rayIntersection(Point BufferPoint,Point rayDir,int depth)
         double temp_t=-1;
 
         if(r1 > r2) std::swap(r1,r2);
-        if(r1 < 0) 
+        if(r1 < 0)
         {
-                r1 = r2; //if r1 is negative, let's use r2 instead 
-                if(r1 < 0) continue; // both negative
-            }
-            temp_t = r1;
+            r1 = r2; //if r1 is negative, let's use r2 instead
+            if(r1 < 0) continue; // both negative
+        }
+        temp_t = r1;
 
 
-            //std::cout<<"outside if\n";
-            if(temp_t > 0 && temp_t < min_t && temp_t <= farDist)
+        //std::cout<<"outside if\n";
+        if(temp_t > 0 && temp_t < min_t && temp_t <= farDist)
+        {
+            //std::cout<<"in if\n";
+            min_t=temp_t;
+            does_it_intersect=true;
+
+
+            amb = all_Spheres.at(i).ambient_coef;
+            dif = all_Spheres.at(i).diffuse_coef;
+            spec = all_Spheres.at(i).spec_coef;
+            reflec = all_Spheres.at(i).reflec_coef;
+            expo = all_Spheres.at(i).specular_exponent;
+
+            if(amb != 0 && dif != 0 && spec != 0 && reflec != 0 && expo != 0 )
             {
-                //std::cout<<"in if\n";
-                min_t=temp_t;
-                does_it_intersect=true;
-
-                amb = all_Spheres.at(i).ambient_coef;
-                dif = all_Spheres.at(i).diffuse_coef;
-                spec = all_Spheres.at(i).spec_coef;
-                reflec = all_Spheres.at(i).reflec_coef;
-                expo = all_Spheres.at(i).specular_exponent;
-
-                Point intersecting_at(BufferPoint.x+min_t*rayDir.x,BufferPoint.y+min_t*rayDir.y,BufferPoint.z+min_t*rayDir.z);
-
-                normal=all_Spheres.at(i).normal_on_sphere(intersecting_at);
-                ret_pixel=all_Spheres.at(i).sphereColor;
-
-                isSphere=true;
-
+                std::cout<<amb<<" "<<dif <<" " << spec << " " << reflec << " "<<expo<<"\n";
             }
+            Point intersecting_at(BufferPoint.x+min_t*rayDir.x,BufferPoint.y+min_t*rayDir.y,BufferPoint.z+min_t*rayDir.z);
 
+            normal=all_Spheres.at(i).normal_on_sphere(intersecting_at);
+            ret_pixel=all_Spheres.at(i).sphereColor;
 
-            else continue;
+            isSphere=true;
+
         }
 
 
-        //chess board ray intersection
-        Point O = BufferPoint;
-        rayDir.normalize();
+        else continue;
+    }
+
+
+    //chess board ray intersection
+    Point O = BufferPoint;
+    rayDir.normalize();
         double t_scalar = -O.z/rayDir.z; //t = -O.z/d.z
 
         if(t_scalar > 0 && t_scalar < min_t)
@@ -869,7 +994,7 @@ Color rayIntersection(Point BufferPoint,Point rayDir,int depth)
             int row = floor((O.x+rayDir.x*t_scalar)/chessBoard.TileWidth);
             int col = floor((O.y+rayDir.y*t_scalar)/chessBoard.TileWidth);
 
-            if((row+col)%2 == 0) 
+            if((row+col)%2 == 0)
             {
 
                 ret_pixel.r = 1;
@@ -879,121 +1004,138 @@ Color rayIntersection(Point BufferPoint,Point rayDir,int depth)
 
             else
             {
-             ret_pixel.r = 0;
-             ret_pixel.g = 0;
-             ret_pixel.b = 0;
-         }
+               ret_pixel.r = 0;
+               ret_pixel.g = 0;
+               ret_pixel.b = 0;
+           }
 
 
-     }
+       }
 
 
-/*    //intersection of pyramid base
-     Point Ro = BufferPoint;
+           //intersection of pyramid base
+           //here O is not camera pos (origin), it is pixel point
+           O = BufferPoint;
+
+           for(int i=0;i<all_Pyramids.size();i++)
+           {
+
+            count++;
+            double z=all_Pyramids.at(i).square.p[0].z;
+            double t_scalar=(z-O.z)/rayDir.z;
+
+            Point intersecting_at(O.x+t_scalar*rayDir.x,O.y+t_scalar*rayDir.y,O.z+t_scalar*rayDir.z);
 
 
-     for(int i=0;i<all_Pyramids.size();i++)  
-     {
-        count++;
-        double Z=all_Pyramids.at(i).square.p[0].z;
-        double t=(Z-Ro.z)/rayDir.z;
+            //intersection.printVector();
+            //std::cout<<all_Pyramids.at(i).square.p[0].x<< " " << all_Pyramids.at(i).square.width <<"\n";
 
-        Point intersection(Ro.x+t*rayDir.x,Ro.y+t*rayDir.y,Ro.z+t*rayDir.z);
-
-        
-        //intersection.printVector();
-        //std::cout<<all_Pyramids.at(i).square.p[0].x<< " " << all_Pyramids.at(i).square.width <<"\n";
-        
-        if(intersection.x >= all_Pyramids.at(i).square.p[0].x && intersection.x <= all_Pyramids.at(i).square.p[0].x + all_Pyramids.at(i).square.width)
-        {
-
-         //std::cout<< count << " " <<intersection.x<< " " <<  all_Pyramids.at(i).square.width << "\n";
-
-         if(intersection.y>=all_Pyramids.at(i).square.p[0].y && intersection.y<=all_Pyramids.at(i).square.p[0].y+all_Pyramids.at(i).square.width)
-         {
-
-            if(t>0 && t<min_t )
+            if(intersecting_at.x >= all_Pyramids.at(i).square.p[0].x && intersecting_at.x <= all_Pyramids.at(i).square.p[0].x + all_Pyramids.at(i).square.width)
             {
 
-                does_it_intersect=true;
-                min_t=t;
+             //std::cout<< count << " " <<intersecting_at.x<< " " <<  all_Pyramids.at(i).square.width << "\n";
 
-                normal=Point (0,0,-1);
-                ret_pixel=all_Pyramids.at(i).pyramidColor;
-                
+             if(intersecting_at.y>=all_Pyramids.at(i).square.p[0].y && intersecting_at.y<=all_Pyramids.at(i).square.p[0].y+all_Pyramids.at(i).square.width)
+             {
+
+                if(t_scalar>0 && t_scalar<min_t )
+                {
+
+                    does_it_intersect=true;
+                    min_t=t_scalar;
+
+                    amb = all_Pyramids.at(i).ambient_coef;
+                    dif = all_Pyramids.at(i).diffuse_coef;
+                    spec = all_Pyramids.at(i).spec_coef;
+                    reflec = all_Pyramids.at(i).reflec_coef;
+                    expo = all_Pyramids.at(i).specular_exponent;
+
+                    normal=Point (0,0,-1);
+                    ret_pixel=all_Pyramids.at(i).pyramidColor;
+
+
+                }
+            }
+        }
+
+
+    }
+
+
+    //pyramid sides ray casting --
+    //ray drawn from camera eye to intersecting point
+    //and not from bufferPoint to camera eye
+    for (int i = 0; i < all_Pyramids.size(); ++i)
+    {
+
+        for (int j = 0; j < 4; ++j)
+        {
+
+            Triangle tri =  all_Pyramids.at(i).tri[j];
+
+            //three triangle points a,b,c
+            Point a = Point(tri.p[0].x, tri.p[0].y, tri.p[0].z);
+            Point b = Point(tri.p[1].x, tri.p[1].y, tri.p[1].z);
+            Point c = Point(tri.p[2].x, tri.p[2].y, tri.p[2].z);
+
+
+            Point AB = b-a; //AB
+            Point CA = c-a; //CA
+
+
+            Point cross = AB*CA;
+            Point Normal = findNormal(cross);
+
+            Point pointAToCam = Point(a.x-new_pos.x, a.y-new_pos.y, a.z-new_pos.z);
+            double num = dot(Normal,pointAToCam);
+            double den = dot(Normal, rayDir);
+
+            double t;
+            if(den != 0 )
+            {
+                t = num/den;
+            }
+
+            //P1 = intersecting point
+            //new_pos = camera position i.e Origin
+            Point P1(new_pos.x + t*rayDir.x, new_pos.y + t*rayDir.y,  new_pos.z + t*rayDir.z);
+
+
+            Point x = Point(P1.x - a.x, P1.y - a.y, P1.z-a.z);
+            Point y = AB;
+            Point z = CA;
+
+            //std::cout << dot(y,z) << " " << dot(x,z) <<" " << dot(z,z) << " " << dot(x,y) << "\n";
+            //std::cout<<(dot(y,z) * dot(x,z)) << " " << dot(z,z)*dot(x,y) << "\n";
+            //std::cout<<(dot(y,z)*dot(y,z)) << " " << dot(y,y)*dot(z,z) << "\n";
+            //std::cout<<(dot(y,z) * dot(x,z) - dot(z,z)*dot(x,y)) << " " << (dot(y,z)*dot(y,z) - dot(y,y)*dot(z,z)) << "\n";
+
+            double var1 = (dot(y,z) * dot(x,z) - dot(z,z)*dot(x,y))/(dot(y,z)*dot(y,z) - dot(y,y)*dot(z,z));
+            double var2 = (dot(y,z) * dot(x,y) - dot(y,y)*dot(x,z))/(dot(y,z)*dot(y,z) - dot(y,y)*dot(z,z));
+
+
+            //Ray intersects triangle if the last three conditions hold:
+            if( t< min_t && var1 >= 0 && var2 >= 0 && var1+var2 <= 1)
+            {
+                //std::cout<<"ray intersects triangle\n";
+                does_it_intersect=true;
+
+                amb = all_Pyramids.at(i).ambient_coef;
+                dif = all_Pyramids.at(i).diffuse_coef;
+                spec = all_Pyramids.at(i).spec_coef;
+                reflec = all_Pyramids.at(i).reflec_coef;
+                expo = all_Pyramids.at(i).specular_exponent;
+
+                ret_pixel = all_Pyramids.at(i).pyramidColor;
+
 
             }
         }
-    }   
 
-
-}
-
-
-//pyramid sides ray casting -- ray drawn from camera eye to intersecting point
-//and not from bufferPoint to camera eye
-for (int i = 0; i < all_Pyramids.size(); ++i)
-{
-
-    for (int j = 0; j < 4; ++j)
-    {
-
-        Triangle tri =  all_Pyramids.at(i).tri[j];
-
-        //three triangle points a,b,c
-        Point a = Point(tri.p[0].x, tri.p[0].y, tri.p[0].z); 
-        Point b = Point(tri.p[1].x, tri.p[1].y, tri.p[1].z);
-        Point c = Point(tri.p[2].x, tri.p[2].y, tri.p[2].z);
-
-
-        Point AB = b-a; //AB
-        Point CA = c-a; //CA
-
-
-        Point cross = AB*CA;
-        Point Normal = findNormal(cross);
-
-        Point pointAToCam = Point(a.x-new_pos.x, a.y-new_pos.y, a.z-new_pos.z);
-        double num = dot(Normal,pointAToCam);
-        double den = dot(Normal, rayDir);
-
-        double t;
-        if(den != 0 )
-        {
-            t = num/den;
-        }
-
-        //P1 = intersecting point
-        //new_pos = camera position i.e Origin
-        Point P1(new_pos.x + t*rayDir.x, new_pos.y + t*rayDir.y,  new_pos.z + t*rayDir.z);
-
-        
-        Point x = Point(P1.x - a.x, P1.y - a.y, P1.z-a.z);
-        Point y = AB;
-        Point z = CA;
-
-        //std::cout << dot(y,z) << " " << dot(x,z) <<" " << dot(z,z) << " " << dot(x,y) << "\n";
-        //std::cout<<(dot(y,z) * dot(x,z)) << " " << dot(z,z)*dot(x,y) << "\n";
-        //std::cout<<(dot(y,z)*dot(y,z)) << " " << dot(y,y)*dot(z,z) << "\n";
-        //std::cout<<(dot(y,z) * dot(x,z) - dot(z,z)*dot(x,y)) << " " << (dot(y,z)*dot(y,z) - dot(y,y)*dot(z,z)) << "\n";
-
-        double var1 = (dot(y,z) * dot(x,z) - dot(z,z)*dot(x,y))/(dot(y,z)*dot(y,z) - dot(y,y)*dot(z,z));
-        double var2 = (dot(y,z) * dot(x,y) - dot(y,y)*dot(x,z))/(dot(y,z)*dot(y,z) - dot(y,y)*dot(z,z));
-
-
-        //Ray intersects triangle if the last three conditions hold:    
-        if( t< min_t && var1 >= 0 && var2 >= 0 && var1+var2 <= 1)
-        {
-            //std::cout<<"ray intersects triangle\n";
-            does_it_intersect=true;
-            ret_pixel = all_Pyramids.at(i).pyramidColor;
-        }
     }
 
-}*/
-
-     if(does_it_intersect)
-     {
+    if(does_it_intersect)
+    {
         Color illum = Color(0,0,0);
         illum.r += ret_pixel.r*amb;
         illum.g += ret_pixel.g*amb;
@@ -1005,16 +1147,22 @@ for (int i = 0; i < all_Pyramids.size(); ++i)
 
         return illum;
     }
-    else return ret_pixel;
+    else
+    {
+        return ret_pixel;
+    }
 }
+
 
 
 
 void showBitmapImage(std::vector<std::vector<Color>> pixelBuffer)
 {
     bitmap_image image(number_of_pixels, number_of_pixels);
-    for (int x = 0; x < number_of_pixels; x++) {
-        for (int y = 0; y < number_of_pixels; y++) {
+    for (int x = 0; x < number_of_pixels; x++)
+    {
+        for (int y = 0; y < number_of_pixels; y++)
+        {
 
             double r = std::min(pixelBuffer[y][x].r,1.0)*255;
             double g = std::min(pixelBuffer[y][x].g,1.0)*255;
@@ -1058,7 +1206,7 @@ void printWhatsStored()
     {
         std::cout<< all_Lights[i]<< " ";
     }
-    
+
     std::cout<<"\n";*/
 }
 
@@ -1271,60 +1419,60 @@ void drawNormalSphere(double radius, int slices, int stacks)
         }
 
         /*side cylinders*/
-        /*for( j=0; j<=2; j++)
-        {
-            if(j==1)
-                glO_minus_Ctatef(90,1,0,0);
-            if(j==2)
-                glO_minus_Ctatef(90,0,1,0);
+/*for( j=0; j<=2; j++)
+{
+    if(j==1)
+        glO_minus_Ctatef(90,1,0,0);
+    if(j==2)
+        glO_minus_Ctatef(90,0,1,0);
 
 
-            for(int i=0; i<4; i++)
-            {
-                glPushMatrix();
-                {
-                    glTranslatef(len*transX[i],len*transY[i],0);
-                    drawOneFourthCylinder(radius,len*2,slices,i);
-                }
-                glPopMatrix();
-            }
-
-        }
-
-        //side squares
-        len+=radius;
+    for(int i=0; i<4; i++)
+    {
         glPushMatrix();
         {
-
-            for(int i=0; i<4; i++)
-            {
-                glPushMatrix();
-                {
-                    glO_minus_Ctatef(90*i,0,0,1);
-                    glTranslatef(len,0,0);
-                    glO_minus_Ctatef(90,0,1,0);
-
-                    drawSquare(len-radius);
-                }
-
-                glPopMatrix();
-            }
-
-
-            glPushMatrix();
-            glTranslatef(0,0,len);
-            drawSquare(len-radius);
-            glPopMatrix();
-
-            glPushMatrix();
-            glTranslatef(0,0,-len);
-            drawSquare(len-radius);
-            glPopMatchessBoardrix();
-
+            glTranslatef(len*transX[i],len*transY[i],0);
+            drawOneFourthCylinder(radius,len*2,slices,i);
         }
         glPopMatrix();
     }
+
+}
+
+//side squares
+len+=radius;
+glPushMatrix();
+{
+
+    for(int i=0; i<4; i++)
+    {
+        glPushMatrix();
+        {
+            glO_minus_Ctatef(90*i,0,0,1);
+            glTranslatef(len,0,0);
+            glO_minus_Ctatef(90,0,1,0);
+
+            drawSquare(len-radius);
+        }
+
+        glPopMatrix();
+    }
+
+
+    glPushMatrix();
+    glTranslatef(0,0,len);
+    drawSquare(len-radius);
     glPopMatrix();
+
+    glPushMatrix();
+    glTranslatef(0,0,-len);
+    drawSquare(len-radius);
+    glPopMatchessBoardrix();
+
+}
+glPopMatrix();
+}
+glPopMatrix();
 }*/
 
 /*void drawCircle(double radius,int segments)
@@ -1414,62 +1562,62 @@ void specialKeyListener(int key, int x, int y)
 
     switch(key)
     {
-        //backwarayDir
-        case GLUT_KEY_DOWN :
+    //backwarayDir
+    case GLUT_KEY_DOWN :
 
         pos.x -= l.x * fraction;
         pos.y -= l.y * fraction;
 
         break;
 
-            //forwarayDir
-        case GLUT_KEY_UP :
+    //forwarayDir
+    case GLUT_KEY_UP :
 
         pos.x += l.x * fraction;
         pos.y += l.y * fraction;
         break;
 
-        case GLUT_KEY_LEFT :
+    case GLUT_KEY_LEFT :
 
         pos.x -= fraction*r.x;
         pos.y -= fraction*r.y;
-            //pos.z -= fraction+r.z;
+        //pos.z -= fraction+r.z;
 
         break;
 
-        case GLUT_KEY_RIGHT :
+    case GLUT_KEY_RIGHT :
 
         pos.x += fraction*r.x;
         pos.y += fraction*r.y;
-            //pos.z += fraction+r.z;
+        //pos.z += fraction+r.z;
 
         break;
 
-        case GLUT_KEY_PAGE_UP:
+    case GLUT_KEY_PAGE_UP:
         pos.z += 3.0;
 
         break;
 
-        case GLUT_KEY_PAGE_DOWN:
+    case GLUT_KEY_PAGE_DOWN:
         pos.z -= 3.0;
         break;
 
 
-        case GLUT_KEY_INSERT:
+    case GLUT_KEY_INSERT:
         break;
 
-        case GLUT_KEY_HOME:
+    case GLUT_KEY_HOME:
         if(sphereRadius<cubeLength/2)
             sphereRadius++;
         break;
-        case GLUT_KEY_END:
+    case GLUT_KEY_END:
         if (sphereRadius > 0)
         {
             sphereRadius--;
         }
         break;
 
-        default:
+    default:
         break;
     }
 }
@@ -1483,8 +1631,8 @@ void keyboardListener(unsigned char key, int x, int y)
     switch(key)
     {
 
-        //rotate left
-        case '1':
+    //rotate left
+    case '1':
 
 
         l_=l,r_=r,u_=u;
@@ -1500,7 +1648,7 @@ void keyboardListener(unsigned char key, int x, int y)
 
         break;
 
-        case '2':
+    case '2':
 
         l_=l,r_=r,u_=u;
         tempAngle = angle;
@@ -1513,7 +1661,7 @@ void keyboardListener(unsigned char key, int x, int y)
         angle = tempAngle;
         break;
 
-        case '3':
+    case '3':
 
         l_=l,r_=r,u_=u;
         tempAngle = angle;
@@ -1527,7 +1675,7 @@ void keyboardListener(unsigned char key, int x, int y)
         angle = tempAngle;
         break;
 
-        case '4':
+    case '4':
 
         l_=l,r_=r,u_=u;
         tempAngle = angle;
@@ -1542,7 +1690,7 @@ void keyboardListener(unsigned char key, int x, int y)
         break;
 
 
-        case '5':
+    case '5':
 
         l_=l,r_=r,u_=u;
         tempAngle = angle;
@@ -1556,7 +1704,7 @@ void keyboardListener(unsigned char key, int x, int y)
         angle = tempAngle;
         break;
 
-        case '6':
+    case '6':
         l_=l,r_=r,u_=u;
         tempAngle = angle;
 
@@ -1569,11 +1717,11 @@ void keyboardListener(unsigned char key, int x, int y)
         angle = tempAngle;
         break;
 
-        case 'G':
+    case 'G':
         drawGrid = 1- drawGrid;
         break;
 
-        case '0':
+    case '0':
         new_u = u;
         new_u.normalize();
 
@@ -1587,7 +1735,7 @@ void keyboardListener(unsigned char key, int x, int y)
         generatePixelPoints();
         break;
 
-        default:
+    default:
         break;
     }
 
@@ -1645,21 +1793,23 @@ void loadTestData()
     std::cin>>recursionLevel;
     std::cout<<"recursionLevel "<<recursionLevel<<std::endl;
     std::cin>>number_of_pixels;
-    
+
     std::cout<<"number_of_pixels "<<number_of_pixels<<std::endl;
-    
+
     chessBoard = ChessBoard(number_of_pixels,number_of_pixels);
     int totalObj;
     std::cin>>totalObj;
     std::cout<<"totalObj "<<totalObj<<std::endl;
-    
+
     std::string type;
-    
-    for(int i = 0; i < totalObj;i++)    {
+
+    for(int i = 0; i < totalObj; i++)
+    {
         std::cin>>type;
         std::cout<<"i - type " << i << " " << type<<"\n";
-        
-        if(type=="sphere")  {
+
+        if(type=="sphere")
+        {
             Sphere mySphere;
             std::cin>>mySphere.sphereCenter.x>>mySphere.sphereCenter.y>>mySphere.sphereCenter.z;
             std::cout<<mySphere.sphereCenter.x<<" "<<mySphere.sphereCenter.y<<" "<<mySphere.sphereCenter.z<<"\n";
@@ -1672,25 +1822,29 @@ void loadTestData()
 
             std::cin>>mySphere.ambient_coef>>mySphere.diffuse_coef>>mySphere.spec_coef>>mySphere.reflec_coef;
             std::cin>>mySphere.specular_exponent;
-            std::cout<<"shine: "<<mySphere.specular_exponent<<"\n";
-            
+            std::cout<<"specular_exponent: "<<mySphere.specular_exponent<<"\n";
+
+            //std::cout<<"input ~~~~~~~~~~\n";
+            //std::cout<<mySphere.ambient_coef<<" "<<mySphere.diffuse_coef <<" " << mySphere.spec_coef<< " " << mySphere.reflec_coef << " "<<mySphere.specular_exponent<<"\n";
+
             all_Spheres.push_back(mySphere);
         }
-        else if(type == "pyramid")  {
+        else if(type == "pyramid")
+        {
 
             Point point;
             double width, height;
             Color color;
-            
+
             double am_co,dif_co,spec_co, reflec_co,spec_ex;
             std::cin>>point.x>>point.y>>point.z;
-            std::cout<<point.x << " " <<point.y << " " <<point.z << " \n";  
+            std::cout<<point.x << " " <<point.y << " " <<point.z << " \n";
 
             std::cin>>width>>height;
-            std::cout<<width << " " << height << " \n";  
+            std::cout<<width << " " << height << " \n";
 
             std::cin>>color.r>>color.g>>color.b;
-            std::cout<<color.r << " " <<color.g << " " <<color.b << " \n";  
+            std::cout<<color.r << " " <<color.g << " " <<color.b << " \n";
 
 
             std::cin>>am_co>>dif_co>>spec_co>>reflec_co;
@@ -1703,26 +1857,31 @@ void loadTestData()
             myPyramid.spec_coef = spec_co;
             myPyramid.reflec_coef = reflec_co;
             myPyramid.specular_exponent = spec_ex;
-            
+
+
+            // std::cout<<"input ~~~~~~~~~~\n";
+            // std::cout<<myPyramid.ambient_coef<<" "<<myPyramid.diffuse_coef <<" " << myPyramid.spec_coef<< " " << myPyramid.reflec_coef << " "<<myPyramid.specular_exponent<<"\n";
+
             all_Pyramids.push_back(myPyramid);
             printWhatsStored();
         }
     }
 
-    int lightCnt;
-    std::cin>>lightCnt;
-    std::cout<<"lightCnt "<<lightCnt<<"\n";
-    //lights.clear();
-    for(int i = 0; i < lightCnt; i++)   {
-        Point lightPoint;
-        std::cin>>lightPoint.x>>lightPoint.y>>lightPoint.z;
-        std::cout<<lightPoint.x << " " <<lightPoint.y << " " <<lightPoint.z << " \n";  
+    int light_num;
+    std::cin>>light_num;
+    std::cout<<"light_num "<<light_num<<"\n";
+   
+    for(int i = 0; i < light_num; i++)
+    {
+        Point light_coord;
+        std::cin>>light_coord.x>>light_coord.y>>light_coord.z;
+        std::cout<<light_coord.x << " " <<light_coord.y << " " <<light_coord.z << " \n";
 
-        //lights.push_back(lg);
-      //  std::cout<<"light: \n";
-//        lg.print();
+        all_Lights.push_back(light_coord);
+        //  std::cout<<"light: \n";
+        //        lg.print();
     }
-    std::cout<<"END OF INPUT\n";
+    std::cout<<"INPUT READ\n";
 }
 
 void display()
@@ -1736,9 +1895,9 @@ void display()
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    gluLookAt(	pos.x, pos.y, pos.z,
-      pos.x+l.x, pos.y+l.y,  pos.z+l.z,
-      u.x, u.y, u.z);
+    gluLookAt(  pos.x, pos.y, pos.z,
+                pos.x+l.x, pos.y+l.y,  pos.z+l.z,
+                u.x, u.y, u.z);
 
 
     glMatrixMode(GL_MODELVIEW);
@@ -1755,23 +1914,23 @@ void display()
     Point p(0,0,0);
     Square sq(p,10,c);
     sq.drawSquare();*/
-    
+
     for (int i = 0; i < all_Pyramids.size(); ++i)
     {
-       all_Pyramids[i].drawPyramid();
-   }
+        all_Pyramids[i].drawPyramid();
+    }
 
-   for (int i = 0; i < all_Spheres.size(); ++i)
-   {
-       all_Spheres[i].drawSphere();
-   }
+    for (int i = 0; i < all_Spheres.size(); ++i)
+    {
+        all_Spheres[i].drawSphere();
+    }
 
 
-   chessBoard.drawChessBoard();
+    chessBoard.drawChessBoard();
 
 
     ///flush
-   glutSwapBuffers();
+    glutSwapBuffers();
 
 }
 void animate()
