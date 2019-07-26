@@ -1,3 +1,7 @@
+/*
+    Ray Tracing
+    Author : Afsara Benazir 1505118
+*/
 
 #include <bits/stdc++.h>
 #include "bitmap_image.hpp"
@@ -25,7 +29,7 @@ int transY[]= {1,1,-1,-1,1,1,-1,-1};
 int transZ[]= {1,1,1,1,-1,-1,-1,-1};
 
 double nearDist = 1;
-double farayDirist = 1000;
+double farDist = 1000;
 double fovY = 90;
 double fovX = fovY;
 
@@ -42,11 +46,6 @@ double recursionLevel;
 
 //Color imageMap[2002][2002];
 //Color sourcePower;
-
-#define CHECKBOArayDir 0
-#define PYRAMID 1
-#define SPHERE 2
-#define EYE 3
 
 
 
@@ -70,8 +69,6 @@ void init();
 void display();
 void animate();
 
-
-void generateRays();
 
 inline double degToRad(double ang) {
     return ang * pi / 180.0;
@@ -273,6 +270,7 @@ struct vector
 
     }
 
+
     void printVector()
     {
         int precision = 7;
@@ -280,7 +278,9 @@ struct vector
     }
 };
 
-double dot(const vector &vec1, const vector &vec2) {
+typedef vector Point;
+
+double dot(const Point &vec1, const Point &vec2) {
 
     double res = 0;
 
@@ -290,8 +290,30 @@ double dot(const vector &vec1, const vector &vec2) {
     return res;
 }
 
+double det(Point A, Point B, Point C)
+{
+    Point res;
+    res.x = A.x * (B.y*C.z - C.y*B.z);
+    res.y =-A.y * (B.x*C.z - C.x*B.z);
+    res.z = A.z * (B.x*C.y - C.x*B.y);   
 
-typedef vector Point;
+    double ret = res.x + res.y + res.z;
+    return ret;
+}
+
+Point findNormal(Point p) {
+
+    double val = p.magnitude();
+        //if magnitude less than EPS, return;
+    if(val<EPS) return p;
+    p.x = p.x / val;
+    p.y = p.y / val;
+    p.z = p.z / val;
+    return p;
+
+    //cout << "\nnormalizing\n[ " << p.x << " " << p.y << " " << p.z << " " << p.w << " ] \n";
+
+}
 
 Point pos,u,r,l; //camera position
 Point new_pos, new_l, new_r, new_u;
@@ -302,7 +324,7 @@ void showBitmapImage(std::vector<std::vector<Color>> pixelBuffer);
 Color rayIntersection(Point BufferPoint,Point rayDir,int depth);
 void generate_rays();
 
-struct Ray
+/*struct Ray
 {
     Point startPoint;
     vector direction;
@@ -311,7 +333,7 @@ struct Ray
         direction = p1+(p0*(-1));
         direction.normalize();
     }
-};
+};*/
 
 struct Plane
 {
@@ -386,63 +408,68 @@ struct Square
 
     Point p[4];
     Color c;
+    double width = 10;
 
     Square(){}
-    Square(Point bottomLeft, double width, Color myColor)
+    Square(Point bottomLeft, double w, Color myColor)
     {
         p[0]=bottomLeft;
         p[1]=p[0] + Point(width, 0,0);
         p[2]=p[1] + Point(0, width,0);
         p[3]=p[0] + Point(0,width,0);
         c = myColor;
+        
 
     }
 
-    Square(Point point0, Point poinr1, Point poinr2, Point point3, Color color)
+    Square(Point point0, Point point1, Point point2, Point point3, Color color)
     {
         p[0]= point0;
-        p[1]= poinr1;
-        p[2]= poinr2;
+        p[1]= point1;
+        p[2]= point2;
         p[3]= point3;
 
         c= color;
+        width = distanceBetweenPoints(point0, point1);
     }
 
-    Square(const Square &sq)
+    double distanceBetweenPoints(Point p1, Point p2)
     {
-       p[0]= sq.p[0];
-       p[1]= sq.p[1];
-       p[2]= sq.p[2];
-       p[3]= sq.p[3];
+        double x = pow(p1.x-p2.x,2); //x^2
+        double y = pow(p1.y-p2.y,2); //y^2
+        double z = pow(p1.z-p2.z,2); //z^2
 
-       c= sq.c;
+        double res = sqrt(x+y+z); //sqrt(x^2 + y^2 + z^2)
+        return res;
 
-   }
-
-   void drawSquare()
-   {
-        //std::cout<<"in drawSquare\n";
-
-    glColor3f(c.r,c.g,c.b);
-    glBegin(GL_QUADS);
-    {
-        glVertex3f( p[0].x, p[0].y,p[0].z);
-        glVertex3f( p[1].x, p[1].y,p[1].z);
-        glVertex3f( p[2].x, p[2].y,p[2].z);
-        glVertex3f( p[3].x, p[3].y,p[3].z);
     }
-    glEnd();
 
-        //std::cout<<"out of drawSquare\n";
-}
 
-void printSquare()
-{
-    for (int i = 0; i < 4; ++i)
+
+    void drawSquare()
     {
-        std::cout<< p[i].x << " " << p[i].y << " " << p[i].z << " \n"; 
+            //std::cout<<"in drawSquare\n";
+
+        glColor3f(c.r,c.g,c.b);
+        glBegin(GL_QUADS);
+        {
+            glVertex3f( p[0].x, p[0].y,p[0].z);
+            glVertex3f( p[1].x, p[1].y,p[1].z);
+            glVertex3f( p[2].x, p[2].y,p[2].z);
+            glVertex3f( p[3].x, p[3].y,p[3].z);
+        }
+        glEnd();
+
+            //std::cout<<"out of drawSquare\n";
     }
-}
+
+    void printSquare()
+    {
+        for (int i = 0; i < 4; ++i)
+        {
+            std::cout<< p[i].x << " " << p[i].y << " " << p[i].z << " \n"; 
+        }
+    }
 
 };
 
@@ -453,8 +480,8 @@ struct Sphere
     double radius;
     Color sphereColor;
 
-    double amb, diffuse, spec, refl;
-    double shine;
+    double ambient_coef, diffuse_coef, spec_coef, reflec_coef;
+    double specular_exponent;
 
 
     Sphere()  {}
@@ -492,16 +519,10 @@ struct Sphere
 
     Point normal_on_sphere(Point p)
     {
+        //(p-center).normalize
         Point n(p.x-sphereCenter.x, p.y-sphereCenter.y, p.z-sphereCenter.z);
         n.normalize();
         return n;
-    }
-
-    Point getNormal(Point P)
-    {
-        Point v(P.x-sphereCenter.x,P.y-sphereCenter.y,P.z-sphereCenter.z);
-        v.normalize();
-        return v;
     }
 
 };
@@ -515,6 +536,9 @@ struct Pyramid
 
     double height, width;
     Color pyramidColor;
+
+    double ambient_coef, diffuse_coef, spec_coef, reflec_coef;
+    double specular_exponent;
 
     Pyramid(){}
     Pyramid(Point bottomLeft, double w, double h, Color c)
@@ -538,8 +562,9 @@ struct Pyramid
         Point pyramidTop = bottomLeft + Point(width/2, width/2, height);
 
         //generate the base square points
-        square = Square(pyramidBase[0],pyramidBase[0],pyramidBase[0],pyramidBase[0], c);
-        
+        square = Square(pyramidBase[0],pyramidBase[1],pyramidBase[2],pyramidBase[3], c);
+        std::cout<<"width : " <<std::fixed << square.width<< " \n";
+
         //generate the pyramid sides points
         for (int i = 0; i < 4; ++i)
         {
@@ -576,57 +601,67 @@ struct Pyramid
 };
 
 
-struct CheckBoard
+struct ChessBoard
 {
 
-    Point centerOfCheckBoard;
+    Point centerOfChessBoard;
     double radius;
     Color c;
     double height, width;
     double TileHeight, TileWidth;
 
-    CheckBoard(){}
-    CheckBoard(double h, double w)
+    double ambient_coef, diffuse_coef, spec_coef, reflec_coef;
+    double specular_exponent;
+
+
+    ChessBoard(){}
+    ChessBoard(double h, double w)
     {
         height = h;
         width = w;
-        TileWidth = 20;
+        TileWidth = 25;
         TileHeight = TileWidth;
-    }
-
-    CheckBoard(const CheckBoard &myCheckBoard)
-    {
-        height = myCheckBoard.height;
-        width = myCheckBoard.width;
-        TileWidth = myCheckBoard.width;
-        TileHeight = myCheckBoard.height;
+        ambient_coef = 0.4;
+        spec_coef = 0.15;
+        diffuse_coef = 0.2;
+        reflec_coef = 0.25;
+        specular_exponent = 4;
 
     }
 
-    void drawCheckBoard()
+    void drawChessBoard()
     {
-        //std::cout<<"in drawCheckBoard\n";
-        int row = 0;
-        //std:: cout << "height " << height <<" width  " << width<< "\n";
-        for (double i = -width/2; i <= width/2; i+= TileWidth, row++)
+        //std::cout<<"in drawChessBoard\n";
+
+        //TileWidth = 25;
+        int cell_count = 10000/25;
+        Point startPoint(-10000/2,-10000/2, 0);
+
+        for (int row = 0; row < cell_count; ++row)
         {
-            int col = 0;
-            for (double j = -height/2; j <= height/2; j+= TileHeight, col++)
+            for (int col = 0; col < cell_count; ++col)
             {
-
-                Color myColor(1,1,1);
                 if((row+col)%2 == 1) {
-                    myColor = Color(0,0,0);
+                    glColor3f(0,0,0);
+                }
+                else
+                {
+                    glColor3f(1,1,1);
                 }
 
-                Square mySquare (Point (i,j,0), TileWidth, myColor);
-                mySquare.drawSquare();
+                glBegin(GL_QUADS);
 
+                glVertex3f(startPoint.x + TileWidth*row,startPoint.y + TileWidth*col,startPoint.z);
+                glVertex3f(startPoint.x + TileWidth*row,startPoint.y + TileWidth*(col+1),startPoint.z);
+                glVertex3f(startPoint.x + TileWidth*(row+1),startPoint.y + TileWidth*(col+1),startPoint.z);
+                glVertex3f(startPoint.x + TileWidth*(row+1),startPoint.y + TileWidth*col,startPoint.z);
+                
+                glEnd();
             }
         }
-
-        //std::cout<<"out of drawCheckBoard\n";
+         //std::cout<<"out of drawChessBoard\n";
     }
+
 };
 
 
@@ -635,14 +670,16 @@ struct CheckBoard
 std::vector<Sphere> all_Spheres;
 std::vector<Pyramid>all_Pyramids;
 std::vector<Point>all_Lights;
-CheckBoard checkBoard;
+ChessBoard chessBoard;
+
+double farClip(Point p);
 
 struct Object
 {
     int object_type;
     int object_id;
 
-    Object(int type = EYE, int id=0)
+    Object(int type = 3, int id=0) //type 3 is eye pos
     {
         object_type= type;
         object_id = id;
@@ -669,7 +706,7 @@ struct Object
 
 void generatePixelPoints()
 {
-   
+
     Point midPoint;
 
     midPoint.x=new_pos.x + new_l.x*nearDist;
@@ -694,7 +731,7 @@ void generatePixelPoints()
 
     for(int i=0;i<number_of_pixels;i++)
     {
-    
+
         std::vector<Point> tempVec;
         for(int j=0;j<number_of_pixels;j++)
         {
@@ -728,15 +765,11 @@ void generate_rays()
     std::cout<<"bmp image OK :\n";
 }
 
+int count = 0;
 //generates pixel points from intersection of ray and object
 Color rayIntersection(Point BufferPoint,Point rayDir,int depth)
 {
-    if(depth==0){
-        Color c(0,0,0);
-        return c;
-    }
 
-    //double maxdist=farClip(rayDir);
     rayDir.normalize();
     double min_t=100000;
     Color ret_pixel(0,0,0);
@@ -746,9 +779,9 @@ Color rayIntersection(Point BufferPoint,Point rayDir,int depth)
     bool isSphere=false;
     
     bool checker=false;
-    double ambient,diffuse,specular,reflection,shininess;
-    ambient=0;
-     
+    double amb,dif,spec,reflec,expo;
+    amb=0;
+
     for(int i=0;i<all_Spheres.size();i++)
     {
         Point center=all_Spheres.at(i).sphereCenter;
@@ -763,55 +796,216 @@ Color rayIntersection(Point BufferPoint,Point rayDir,int depth)
         double b=2*(rayDir.x*O_minus_C.x+rayDir.y*O_minus_C.y+rayDir.z*O_minus_C.z);
         double c=(O_minus_C.x*O_minus_C.x+O_minus_C.y*O_minus_C.y+O_minus_C.z*O_minus_C.z)-pow(all_Spheres.at(i).radius,2);
         
+        //discriminant <0; == 0; >0 cases
         double discriminant = (pow(b,2)- 4*a*c);
-        double root= sqrt(pow(b,2)- 4*a*c);
+        double root= sqrt(discriminant);
         double r1=(-b+root)/(2*a);
         double r2=(-b-root)/(2*a);
 
         //std::cout<< (pow(b,2)- 4*a*c) << " ";
         if(discriminant <0) continue;
+
         double temp_t=-1;
 
-        if(r1<0 && r2<0) continue;
-        if(r1>0 && r2<0) temp_t=r1;
-        if(r1<0 && r2>0) temp_t=r2;
-        if(r1>0 && r2>0) temp_t=fmin(r1,r2);
-
-        std::cout<<"outside if\n";
-        if(temp_t > 0 && temp_t < min_t && temp_t <= farayDirist)
+        if(r1 > r2) std::swap(r1,r2);
+        if(r1 < 0) 
         {
-            std::cout<<"in if\n";
-            min_t=temp_t;
-            does_it_intersect=true;
-            Point intersecting_at(BufferPoint.x+min_t*rayDir.x,BufferPoint.y+min_t*rayDir.y,BufferPoint.z+min_t*rayDir.z);
-            //P=intersection;
-            normal=all_Spheres.at(i).normal_on_sphere(intersecting_at);
-            ret_pixel=all_Spheres.at(i).sphereColor;
-            
-            isSphere=true;
-            
+                r1 = r2; //if r1 is negative, let's use r2 instead 
+                if(r1 < 0) continue; // both negative
+            }
+            temp_t = r1;
+
+
+            //std::cout<<"outside if\n";
+            if(temp_t > 0 && temp_t < min_t && temp_t <= farDist)
+            {
+                //std::cout<<"in if\n";
+                min_t=temp_t;
+                does_it_intersect=true;
+
+                amb = all_Spheres.at(i).ambient_coef;
+                dif = all_Spheres.at(i).diffuse_coef;
+                spec = all_Spheres.at(i).spec_coef;
+                reflec = all_Spheres.at(i).reflec_coef;
+                expo = all_Spheres.at(i).specular_exponent;
+
+                Point intersecting_at(BufferPoint.x+min_t*rayDir.x,BufferPoint.y+min_t*rayDir.y,BufferPoint.z+min_t*rayDir.z);
+
+                normal=all_Spheres.at(i).normal_on_sphere(intersecting_at);
+                ret_pixel=all_Spheres.at(i).sphereColor;
+
+                isSphere=true;
+
+            }
+
+
+            else continue;
         }
 
+
+        //chess board ray intersection
+        Point O = BufferPoint;
+        rayDir.normalize();
+        double t_scalar = -O.z/rayDir.z; //t = -O.z/d.z
+
+        if(t_scalar > 0 && t_scalar < min_t)
+        {
+            min_t = t_scalar;
+            does_it_intersect = true;
+            amb = chessBoard.ambient_coef;
+            dif = chessBoard.diffuse_coef;
+            spec = chessBoard.spec_coef;
+            reflec = chessBoard.reflec_coef;
+            expo = chessBoard.specular_exponent;
+
+            //intersecting at O+td
+            Point intersecting_at(O.x + t_scalar*rayDir.x, O.y + t_scalar*rayDir.y, O.z + t_scalar*rayDir.z);
+            //normal=chessBoard.getNormal();
+
+            normal = Point(0,0,1);
+            checker=true; //?
+
+
+            int row = floor((O.x+rayDir.x*t_scalar)/chessBoard.TileWidth);
+            int col = floor((O.y+rayDir.y*t_scalar)/chessBoard.TileWidth);
+
+            if((row+col)%2 == 0) 
+            {
+
+                ret_pixel.r = 1;
+                ret_pixel.g = 1;
+                ret_pixel.b = 1;
+            }
+
+            else
+            {
+             ret_pixel.r = 0;
+             ret_pixel.g = 0;
+             ret_pixel.b = 0;
+         }
+
+
+     }
+
+
+/*    //intersection of pyramid base
+     Point Ro = BufferPoint;
+
+
+     for(int i=0;i<all_Pyramids.size();i++)  
+     {
+        count++;
+        double Z=all_Pyramids.at(i).square.p[0].z;
+        double t=(Z-Ro.z)/rayDir.z;
+
+        Point intersection(Ro.x+t*rayDir.x,Ro.y+t*rayDir.y,Ro.z+t*rayDir.z);
+
         
-        else continue;
+        //intersection.printVector();
+        //std::cout<<all_Pyramids.at(i).square.p[0].x<< " " << all_Pyramids.at(i).square.width <<"\n";
+        
+        if(intersection.x >= all_Pyramids.at(i).square.p[0].x && intersection.x <= all_Pyramids.at(i).square.p[0].x + all_Pyramids.at(i).square.width)
+        {
+
+         //std::cout<< count << " " <<intersection.x<< " " <<  all_Pyramids.at(i).square.width << "\n";
+
+         if(intersection.y>=all_Pyramids.at(i).square.p[0].y && intersection.y<=all_Pyramids.at(i).square.p[0].y+all_Pyramids.at(i).square.width)
+         {
+
+            if(t>0 && t<min_t )
+            {
+
+                does_it_intersect=true;
+                min_t=t;
+
+                normal=Point (0,0,-1);
+                ret_pixel=all_Pyramids.at(i).pyramidColor;
+                
+
+            }
+        }
+    }   
+
+
+}
+
+
+//pyramid sides ray casting -- ray drawn from camera eye to intersecting point
+//and not from bufferPoint to camera eye
+for (int i = 0; i < all_Pyramids.size(); ++i)
+{
+
+    for (int j = 0; j < 4; ++j)
+    {
+
+        Triangle tri =  all_Pyramids.at(i).tri[j];
+
+        //three triangle points a,b,c
+        Point a = Point(tri.p[0].x, tri.p[0].y, tri.p[0].z); 
+        Point b = Point(tri.p[1].x, tri.p[1].y, tri.p[1].z);
+        Point c = Point(tri.p[2].x, tri.p[2].y, tri.p[2].z);
+
+
+        Point AB = b-a; //AB
+        Point CA = c-a; //CA
+
+
+        Point cross = AB*CA;
+        Point Normal = findNormal(cross);
+
+        Point pointAToCam = Point(a.x-new_pos.x, a.y-new_pos.y, a.z-new_pos.z);
+        double num = dot(Normal,pointAToCam);
+        double den = dot(Normal, rayDir);
+
+        double t;
+        if(den != 0 )
+        {
+            t = num/den;
+        }
+
+        //P1 = intersecting point
+        //new_pos = camera position i.e Origin
+        Point P1(new_pos.x + t*rayDir.x, new_pos.y + t*rayDir.y,  new_pos.z + t*rayDir.z);
+
+        
+        Point x = Point(P1.x - a.x, P1.y - a.y, P1.z-a.z);
+        Point y = AB;
+        Point z = CA;
+
+        //std::cout << dot(y,z) << " " << dot(x,z) <<" " << dot(z,z) << " " << dot(x,y) << "\n";
+        //std::cout<<(dot(y,z) * dot(x,z)) << " " << dot(z,z)*dot(x,y) << "\n";
+        //std::cout<<(dot(y,z)*dot(y,z)) << " " << dot(y,y)*dot(z,z) << "\n";
+        //std::cout<<(dot(y,z) * dot(x,z) - dot(z,z)*dot(x,y)) << " " << (dot(y,z)*dot(y,z) - dot(y,y)*dot(z,z)) << "\n";
+
+        double var1 = (dot(y,z) * dot(x,z) - dot(z,z)*dot(x,y))/(dot(y,z)*dot(y,z) - dot(y,y)*dot(z,z));
+        double var2 = (dot(y,z) * dot(x,y) - dot(y,y)*dot(x,z))/(dot(y,z)*dot(y,z) - dot(y,y)*dot(z,z));
+
+
+        //Ray intersects triangle if the last three conditions hold:    
+        if( t< min_t && var1 >= 0 && var2 >= 0 && var1+var2 <= 1)
+        {
+            //std::cout<<"ray intersects triangle\n";
+            does_it_intersect=true;
+            ret_pixel = all_Pyramids.at(i).pyramidColor;
+        }
     }
 
+}*/
 
-    //checker board ray intersection
-    //O+td
-    /*Point O = BufferPoint;
-    rayDir.normalize();
-    double t_scalar = -O.z/rayDir.z;
+     if(does_it_intersect)
+     {
+        Color illum = Color(0,0,0);
+        illum.r += ret_pixel.r*amb;
+        illum.g += ret_pixel.g*amb;
+        illum.b += ret_pixel.b*amb;
 
-    if(t_scalar > 0 && t_scalar < min_t)
-    {
-        min_t = t;
-        does_it_intersect = true;
-        Point intersecting_at(O.x + t*rayDir.x, O.y + t*rayDir.y, O.z + t*rayDir.z);
-        normal = checkBoard.getNormal();
-    }*/
+        illum.r = std::max(illum.r,0.0);
+        illum.g = std::max(illum.g,0.0);
+        illum.b = std::max(illum.b,0.0);
 
-    return ret_pixel;
+        return illum;
+    }
+    else return ret_pixel;
 }
 
 
@@ -833,12 +1027,12 @@ void showBitmapImage(std::vector<std::vector<Color>> pixelBuffer)
 }
 
 
-double farClip(Point p)
+/*double farClip(Point p)
 {
     double dist=p.magnitude();
-    double x=(farayDirist/nearDist)*dist;
+    double x=(farDist/nearDist)*dist;
     return x-dist;
-}
+}*/
 
 
 
@@ -1125,7 +1319,7 @@ void drawNormalSphere(double radius, int slices, int stacks)
             glPushMatrix();
             glTranslatef(0,0,-len);
             drawSquare(len-radius);
-            glPopMatcheckBoardrix();
+            glPopMatchessBoardrix();
 
         }
         glPopMatrix();
@@ -1454,7 +1648,7 @@ void loadTestData()
     
     std::cout<<"number_of_pixels "<<number_of_pixels<<std::endl;
     
-    checkBoard = CheckBoard(number_of_pixels,number_of_pixels);
+    chessBoard = ChessBoard(number_of_pixels,number_of_pixels);
     int totalObj;
     std::cin>>totalObj;
     std::cout<<"totalObj "<<totalObj<<std::endl;
@@ -1476,9 +1670,9 @@ void loadTestData()
             std::cin>>mySphere.sphereColor.r>>mySphere.sphereColor.g>>mySphere.sphereColor.b;
             std::cout<<"sphere color: "<<mySphere.sphereColor.r<<" "<<mySphere.sphereColor.g<<" "<<mySphere.sphereColor.b<<"\n";
 
-            std::cin>>mySphere.amb>>mySphere.diffuse>>mySphere.spec>>mySphere.refl;
-            std::cin>>mySphere.shine;
-            std::cout<<"shine: "<<mySphere.shine<<"\n";
+            std::cin>>mySphere.ambient_coef>>mySphere.diffuse_coef>>mySphere.spec_coef>>mySphere.reflec_coef;
+            std::cin>>mySphere.specular_exponent;
+            std::cout<<"shine: "<<mySphere.specular_exponent<<"\n";
             
             all_Spheres.push_back(mySphere);
         }
@@ -1488,7 +1682,7 @@ void loadTestData()
             double width, height;
             Color color;
             
-            double am,df,spc, refl,shn;
+            double am_co,dif_co,spec_co, reflec_co,spec_ex;
             std::cin>>point.x>>point.y>>point.z;
             std::cout<<point.x << " " <<point.y << " " <<point.z << " \n";  
 
@@ -1499,19 +1693,17 @@ void loadTestData()
             std::cout<<color.r << " " <<color.g << " " <<color.b << " \n";  
 
 
-            std::cin>>am>>df>>spc>>refl;
-            std::cin>>shn;
-            std::cout<<am<<" " << df << " " <<spc << " " <<refl << " " <<shn << " \n";
-
-
-            std::cout<<"py: "<<shn<<"\n";
+            std::cin>>am_co>>dif_co>>spec_co>>reflec_co;
+            std::cin>>spec_ex;
+            std::cout<<am_co<<" " << dif_co << " " <<spec_co << " " <<reflec_co << " " <<spec_ex << " \n";
 
             Pyramid myPyramid(point,width,height,color);
-            /*py.amb = am;
-            py.diffuse = df;
-            py.spec = spc;
-            py.refl = refl;Point
-            py.shine = shn;*/
+            myPyramid.ambient_coef = am_co;
+            myPyramid.diffuse_coef = dif_co;
+            myPyramid.spec_coef = spec_co;
+            myPyramid.reflec_coef = reflec_co;
+            myPyramid.specular_exponent = spec_ex;
+            
             all_Pyramids.push_back(myPyramid);
             printWhatsStored();
         }
@@ -1575,7 +1767,7 @@ void display()
    }
 
 
-   checkBoard.drawCheckBoard();
+   chessBoard.drawChessBoard();
 
 
     ///flush
