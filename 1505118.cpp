@@ -29,25 +29,18 @@ int transX[]= {1,-1,-1,1,1,-1,-1,1};
 int transY[]= {1,1,-1,-1,1,1,-1,-1};
 int transZ[]= {1,1,1,1,-1,-1,-1,-1};
 
-double nearDist = 1;
+double nearDistance = 1;
 double farDist = 1000;
 double fovY = 90;
 double fovX = fovY;
 
 
-//double sceneX, sceneY;
-double sceneX, sceneY;
+//double len_X, len_Y;
+double len_X, len_Y;
 
 //for ray tracing variables
 double  number_of_pixels;
 double recursionLevel;
-
-
-
-
-//Color imageMap[2002][2002]; //?
-//Color sourcePower; //?
-
 
 
 /* FUNCTIONS */
@@ -103,7 +96,8 @@ float Tan(float angle)
 }
 
 
-
+// ~~~~~~~~~~~~~~~~~~~ STRUCTS ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
 
 struct  Color
 {
@@ -184,12 +178,9 @@ struct  Color
 
 
 
-
 struct Point
 {
-    double x,y,z;
-    int dimension;
-
+    double x,y,z, w;
 
     //constructors
     Point() {}
@@ -200,7 +191,7 @@ struct Point
         x = vx;
         y = vy;
         z = vz;
-        dimension = 3;
+        w = 1;
     }
 
     Point (const Point &v)
@@ -208,20 +199,10 @@ struct Point
         x = v.x;
         y = v.y;
         z = v.z;
+        w = 1;
     }
 
     //methods
-    bool operator == (const Point &v) const
-    {
-
-        //?
-        if(!abs(x-v.x) > EPS) return true;
-        if(!abs(y-v.y) > EPS) return true;
-        if(!abs(z-v.z) > EPS) return true;
-
-        return false;
-    }
-
 
     //scalar  multiplication
     Point operator *(const double &scalar)  const
@@ -278,6 +259,7 @@ struct Point
     {
 
         double val = this->magnitude();
+
         //if magnitude less than EPS, return;
         if(val<EPS) return;
         x = x / val;
@@ -296,77 +278,6 @@ struct Point
     }
 };
 
-
-double dot(const Point &vec1, const Point &vec2)
-{
-
-    double res = 0;
-
-    res += vec1.x * vec2.x + vec1.y * vec2.y + vec1.z * vec2.z;
-    if (isNearlyEqual(res, 0)) res = 0;
-
-    return res;
-}
-
-double det(Point A, Point B, Point C)
-{
-    Point res;
-    res.x = A.x * (B.y*C.z - C.y*B.z);
-    res.y =-A.y * (B.x*C.z - C.x*B.z);
-    res.z = A.z * (B.x*C.y - C.x*B.y);
-
-    double ret = res.x + res.y + res.z;
-    return ret;
-}
-
-Point findNormal(Point p)
-{
-
-    double val = p.magnitude();
-    //if magnitude less than EPS, return;
-    if(val<EPS) return p;
-    p.x = p.x / val;
-    p.y = p.y / val;
-    p.z = p.z / val;
-    return p;
-
-    //cout << "\nnormalizing\n[ " << p.x << " " << p.y << " " << p.z << " " << p.w << " ] \n";
-
-}
-
-Point pos,u,r,l; //camera position
-Point new_pos, new_l, new_r, new_u;
-std::vector<std::vector<Point>> pointBuffer;
-
-void generatePixelPoints();
-void showBitmapImage(std::vector<std::vector<Color>> pixelBuffer);
-Color rayIntersection(Point BufferPoint,Point rayDir,int depth);
-void generate_rays();
-
-/*struct Ray
-{
-    Point startPoint;
-    Point direction;
-    Ray(){}
-    Ray(Point p0, Point p1 ){
-        direction = p1+(p0*(-1));
-        direction.normalize();
-    }
-};*/
-
-struct Plane
-{
-    double a,b,c,d;
-    Plane(double aa, double bb, double cc, double dd)
-    {
-        a=aa;
-        b=bb;
-        c=cc;
-        d=dd;
-    }
-};
-
-
 struct Triangle
 {
     Point p[3];
@@ -376,9 +287,7 @@ struct Triangle
     double specular_exponent;
 
     //constructors
-
     Triangle() {}
-
 
     Triangle(Point x, Point y, Point z)
     {
@@ -399,23 +308,16 @@ struct Triangle
 
     Triangle(const Triangle &s)
     {
-
         //std::cout<<"\nin triangle copy constructor\n";
         c=s.c;
 
-        for (int i = 0; i < 3; ++i)
-        {
-           p[i]=s.p[i];
-       }
+        for (int i = 0; i < 3; ++i){ p[i]=s.p[i]; }
 
-
-       ambient_coef = s.ambient_coef;
-       diffuse_coef = s.diffuse_coef;
-       specular_exponent = s.specular_exponent;
-       reflec_coef = s.reflec_coef;
-       spec_coef = s.spec_coef;
-
-
+           ambient_coef = s.ambient_coef;
+           diffuse_coef = s.diffuse_coef;
+           specular_exponent = s.specular_exponent;
+           reflec_coef = s.reflec_coef;
+           spec_coef = s.spec_coef;
    }
 
 
@@ -434,19 +336,19 @@ struct Triangle
     glEnd();
     glPopMatrix();
 
-}
-
-void printTriangle()
-{
-            //std::cout<<"printing triangle points\n";
-    for (int i = 0; i < 3; ++i)
-    {
-        std::cout<<p[i].x << " " << p[i].y << " " << p[i].z << "\n";
-        std::cout<<" triangle amb etc \n";
-        std::cout<<ambient_coef<<" "<<diffuse_coef <<" " << spec_coef<< " " << reflec_coef << " "<<specular_exponent<<"\n\n";
-
     }
-}
+
+    void printTriangle()
+    {
+        //std::cout<<"printing triangle points\n";
+        for (int i = 0; i < 3; ++i)
+        {
+            std::cout<<p[i].x << " " << p[i].y << " " << p[i].z << "\n";
+            //std::cout<<" triangle amb etc \n";
+            std::cout<<ambient_coef<<" "<<diffuse_coef <<" " << spec_coef<< " " << reflec_coef << " "<<specular_exponent<<"\n\n";
+
+        }
+    }
 
 };
 
@@ -516,8 +418,6 @@ struct Square
 
     }
 
-
-
     void drawSquare()
     {
         //std::cout<<"in drawSquare\n";
@@ -546,8 +446,6 @@ struct Square
         }
     }
 
-
-
 };
 
 
@@ -562,15 +460,6 @@ struct Sphere
 
 
     Sphere()  {}
-
-    Sphere(Point center, double r, Color color = Color(0,0,0))
-    {
-        sphereCenter = center;
-        radius = r;
-        sphereColor = color;
-        ambient_coef = ambient_coef;
-        diffuse_coef = diffuse_coef;
-    }
 
     Sphere (const Sphere &s)
     {
@@ -616,7 +505,6 @@ struct Sphere
 };
 
 
-
 struct Pyramid
 {
     Triangle tri[4];
@@ -658,12 +546,6 @@ struct Pyramid
         {
             tri[i] = Triangle(pyramidTop, pyramidBase[i], pyramidBase[ (i+1)%4 ], c);
         }
-
-        ambient_coef = ambient_coef;
-        diffuse_coef = diffuse_coef;
-        specular_exponent = specular_exponent;
-        reflec_coef = reflec_coef;
-        spec_coef = spec_coef;
 
     }
 
@@ -723,8 +605,6 @@ struct Pyramid
 struct ChessBoard
 {
 
-    Point centerOfChessBoard;
-    double radius;
     Color c;
     double height, width;
     double TileHeight, TileWidth;
@@ -743,8 +623,8 @@ struct ChessBoard
         ambient_coef = 0.4;
         spec_coef = 0.15;
         diffuse_coef = 0.2;
-        reflec_coef = 0.25;
-        specular_exponent = 4;
+        reflec_coef = 0.2;
+        specular_exponent = 10;
 
     }
 
@@ -753,7 +633,7 @@ struct ChessBoard
         //std::cout<<"in drawChessBoard\n";
 
         //TileWidth = 25;
-        int cell_count = 10000/25;
+        int cell_count = 10000/30;
         Point startPoint(-10000/2,-10000/2, 0);
 
         for (int row = 0; row < cell_count; ++row)
@@ -784,6 +664,55 @@ struct ChessBoard
 
 };
 
+double dot(const Point &vec1, const Point &vec2)
+{
+
+    double res = 0;
+
+    res += vec1.x * vec2.x + vec1.y * vec2.y + vec1.z * vec2.z;
+    if (isNearlyEqual(res, 0)) res = 0;
+
+    return res;
+}
+
+double det(Point A, Point B, Point C)
+{
+    Point res;
+    res.x = A.x * (B.y*C.z - C.y*B.z);
+    res.y =-A.y * (B.x*C.z - C.x*B.z);
+    res.z = A.z * (B.x*C.y - C.x*B.y);
+
+    double ret = res.x + res.y + res.z;
+    return ret;
+}
+
+Point findNormal(Point p)
+{
+
+    double val = p.magnitude();
+    //if magnitude less than EPS, return;
+    if(val<EPS) return p;
+    p.x = p.x / val;
+    p.y = p.y / val;
+    p.z = p.z / val;
+    return p;
+
+    //cout << "\nnormalizing\n[ " << p.x << " " << p.y << " " << p.z << " " << p.w << " ] \n";
+
+}
+
+Point pos,u,r,l; //camera position
+Point new_pos, new_l, new_r, new_u; //changed eye position
+std::vector<std::vector<Point>> pointBuffer; //stores the 786 pixel points
+
+void generatePixelPoints();
+void showBitmapImage(std::vector<std::vector<Color>> pixelBuffer);
+Color rayIntersection(Point BufferPoint,Point rayDir,int depth);
+void generate_rays();
+
+
+
+
 
 //to store the input sphere,pyramids and lights
 
@@ -793,55 +722,24 @@ std::vector<Point>all_Lights;
 ChessBoard chessBoard;
 
 
-struct Object
-{
-    int object_type;
-    int object_id;
-
-    Object(int type = 3, int id=0) //type 3 is eye pos
-    {
-        object_type= type;
-        object_id = id;
-    }
-
-    Object(const Object &obj)
-    {
-        object_type = obj.object_type;
-        object_id = obj.object_id;
-
-    }
-
-    bool operator == (const Object &obj) const
-    {
-
-        if(object_type == obj.object_type && object_id == obj.object_id)
-        {
-            return true;
-        }
-        else return false;
-
-    }
-};
-
 
 void generatePixelPoints()
 {
 
+    len_Y=2*nearDistance*tan((pi/180.0)*(fovY/2));
+    len_X=2*nearDistance*tan((pi/180.0)*(fovX/2));
 
-    sceneY=2*nearDist*tan((pi/180.0)*(fovY/2));
-    sceneX=2*nearDist*tan((pi/180.0)*(fovX/2));
-
-    double pixel_width = sceneX/number_of_pixels;
-    double pixel_height = sceneY/number_of_pixels;
+    double pixel_width = len_X/number_of_pixels;
+    double pixel_height = len_Y/number_of_pixels;
 
     Point midPoint;
-    midPoint.x=new_pos.x + new_l.x*nearDist;
-    midPoint.y=new_pos.y + new_l.y*nearDist;
-    midPoint.z=new_pos.z + new_l.z*nearDist;
+    midPoint.x=new_pos.x + new_l.x*nearDistance;
+    midPoint.y=new_pos.y + new_l.y*nearDistance;
+    midPoint.z=new_pos.z + new_l.z*nearDistance;
 
 
-    Point topMid(midPoint.x+new_u.x*(sceneY/2),midPoint.y+new_u.y*(sceneY/2),midPoint.z+new_u.z*(sceneY/2));
-    Point startPoint(topMid.x-new_r.x*(sceneX/2),topMid.y-new_r.y*(sceneX/2),topMid.z-new_r.z*(sceneX/2));
+    Point topMid(midPoint.x+new_u.x*(len_Y/2),midPoint.y+new_u.y*(len_Y/2),midPoint.z+new_u.z*(len_Y/2));
+    Point startPoint(topMid.x-new_r.x*(len_X/2),topMid.y-new_r.y*(len_X/2),topMid.z-new_r.z*(len_X/2));
 
     //startpoint = startpoint - u*0.5*pixelWidth + r*0.5*pixelwidth
     startPoint.x=startPoint.x - new_u.x*0.5*pixel_height + new_r.x*0.5*pixel_width;
@@ -861,11 +759,7 @@ void generatePixelPoints()
     }
 
 
-    generate_rays();
-}
-
-void generate_rays()
-{
+    //generating rays
     std::vector<std::vector<Color>> pixel2D_buffer;
     for(int i=0; i<number_of_pixels; i++)
     {
@@ -884,62 +778,122 @@ void generate_rays()
 }
 
 
-double determinant(Point p,Point q,Point r)
-{
-    return p.x*(q.y*r.z-q.z*r.y)-q.x*(p.y*r.z-p.z*r.y)+r.x*(p.y*q.z-p.z*q.y);
-}
-
-
 int c = 0;
-int globalCount = 0;
 int count = 0;
 int count2 = 0;
-
-
-inline double triangleArea(const Point &col1, const Point &col2, const Point &col3)
-{
-    Point a = col1-col3;
-    Point b = col2-col3;
-    double area = .5*sqrt(dot(a*b, a*b));
-    return area;
-}
-bool isOnTriangle(Point p, Triangle t)   {
-    double tot = 0;
-    for(int i = 0; i < 3; i++)  tot+= triangleArea(t.p[i],t.p[(i+1)%3],p);
-        double ar = triangleArea(t.p[0],t.p[1],t.p[2]);
-    if(abs(tot-ar)<EPS) return true;
-    return false;
-}
 
 
 double min_t_for_check_obstacle = INF;
 double evil_epsilon = 0.005;
 
+
+bool pyramid_side_obstacle(Point O, Point rayDir)
+{
+
+      for(int i=0;i<all_Pyramids.size();i++)
+            {
+
+                double z=all_Pyramids.at(i).square.p[0].z;
+                double t_scalar=(z-O.z)/rayDir.z;
+
+                //Point intersecting_at(O.x+t_scalar*rayDir.x,O.y+t_scalar*rayDir.y,O.z+t_scalar*rayDir.z);
+
+
+                //intersection.printPoint();
+                //std::cout<<all_Pyramids.at(i).square.p[0].x<< " " << all_Pyramids.at(i).square.width <<"\n";
+
+                if(O.x >= all_Pyramids.at(i).square.p[0].x && O.x <= all_Pyramids.at(i).square.p[0].x + all_Pyramids.at(i).square.width)
+                {
+                     //std::cout<< count << " " <<intersecting_at.x<< " " <<  all_Pyramids.at(i).square.width << "\n";s
+                    if(O.y>=all_Pyramids.at(i).square.p[0].y && O.y<=all_Pyramids.at(i).square.p[0].y+all_Pyramids.at(i).square.width)
+                    {
+                        if(t_scalar>0 && t_scalar<min_t_for_check_obstacle )
+                        {
+                            min_t_for_check_obstacle = t_scalar;
+                            return false;
+                        }
+                        else
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+}
+
+bool Moller_Trumbore_method_for_pyramid_side_obstacle(Point P, Point source, Point intersecting_to_light_ray)
+{
+    for (int i = 0; i < all_Pyramids.size(); ++i)
+        {
+            for (int j = 0; j < 4; ++j)
+            {
+                Triangle tri =  all_Pyramids.at(i).tri[j];
+
+                //three triangle points a,b,c
+                Point a = Point(tri.p[0].x, tri.p[0].y, tri.p[0].z);
+                Point b = Point(tri.p[1].x, tri.p[1].y, tri.p[1].z);
+                Point c = Point(tri.p[2].x, tri.p[2].y, tri.p[2].z);
+
+
+                Point AB = b-a; //AB
+                Point CA = c-a; //CA
+
+
+                Point cross = AB*CA;
+                Point Normal = findNormal(cross);
+
+                //Point pointToLight = Point(a.x-O.x, a.y-O.y, a.z-O.z);
+                
+                //light-a
+                Point pointToLight = Point(source.x-a.x, source.y-a.y, source.z-a.z);
+                double num = dot(Normal,pointToLight);
+                double den = dot(Normal, intersecting_to_light_ray);
+
+                double t;
+                if(den != 0 )
+                {
+                    t = num/den;
+                }
+
+                //P = intersecting point
+                Point x = Point(P.x - a.x, P.y - a.y, P.z-a.z);
+                Point y = AB;
+                Point z = CA;
+
+                double var1 = (dot(y,z) * dot(x,z) - dot(z,z)*dot(x,y))/(dot(y,z)*dot(y,z) - dot(y,y)*dot(z,z));
+                double var2 = (dot(y,z) * dot(x,y) - dot(y,y)*dot(x,z))/(dot(y,z)*dot(y,z) - dot(y,y)*dot(z,z));
+
+
+                //Ray intersects triangle if the last three conditions hold:
+                if( t< min_t_for_check_obstacle && var1 >= 0 && var2 >= 0 && var1+var2 <= 1)
+                {
+                    //std::cout<<"here\n";
+                    min_t_for_check_obstacle = t;
+                    return false;
+                }
+                else return true;
+            }
+        }
+
+}
 bool checkForObstacle(Point P, Point source)
 {
 
     Point ray_from_Intersection_To_Source(source.x-P.y, source.x-P.y, source.z-P.z); //P to S ray ber korlam
-
     ray_from_Intersection_To_Source.normalize();
-
     Point rayDir = ray_from_Intersection_To_Source;
-    
     Point O(P.x + evil_epsilon * rayDir.x , P.y + evil_epsilon * rayDir.y , P.z + evil_epsilon * rayDir.z ); //korlam nahole object nijeke barrier bhabbe
     
-    // O.normalize();
-     //rayDir = O;
 
-    //Point Ro = O;
-    //Point Rd = ray_from_Intersection_To_Source;
 
-        //chess board ray intersection
-
-    rayDir.normalize();
+        //~~~~~~~~~~~~~~~ chess board ray intersection ~~~~~~~~~~~~~~~~~~ //
+        // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
+        rayDir.normalize();
         double t_scalar = -O.z/rayDir.z; //t = -O.z/d.z
 
         if(t_scalar > 0 && t_scalar < min_t_for_check_obstacle)
         {
-            min_t_for_check_obstacle = t_scalar;
+            //min_t_for_check_obstacle = t_scalar;
             return false;
         }
 
@@ -971,148 +925,42 @@ bool checkForObstacle(Point P, Point source)
             if(r1 > r2) std::swap(r1,r2);
             if(r1 < 0)
             {
-            r1 = r2; //if r1 is negative, let's use r2 instead
-            if(r1 < 0) continue; // both negative
-        }
-        temp_t = r1;
-
-        if(temp_t > 0 && temp_t <min_t_for_check_obstacle)
-        {
-            min_t_for_check_obstacle = temp_t;
-                return false; //no obstacle
+                r1 = r2; //if r1 is negative, let's use r2 instead
+                if(r1 < 0) continue; // both negative
             }
-                else return true; //obstacle ache tai diffuse light na
+            temp_t = r1;
 
-            }  
-
-
-       //intersection of pyramid base
-       //here O is not camera pos (origin), it is pixel point
-
-
-            for(int i=0;i<all_Pyramids.size();i++)
+            if(temp_t > 0 && temp_t <min_t_for_check_obstacle)
             {
-
-                double z=all_Pyramids.at(i).square.p[0].z;
-                double t_scalar=(z-O.z)/rayDir.z;
-
-            //Point intersecting_at(O.x+t_scalar*rayDir.x,O.y+t_scalar*rayDir.y,O.z+t_scalar*rayDir.z);
-
-
-            //intersection.printPoint();
-            //std::cout<<all_Pyramids.at(i).square.p[0].x<< " " << all_Pyramids.at(i).square.width <<"\n";
-
-                if(O.x >= all_Pyramids.at(i).square.p[0].x && O.x <= all_Pyramids.at(i).square.p[0].x + all_Pyramids.at(i).square.width)
-                {
-             //std::cout<< count << " " <<intersecting_at.x<< " " <<  all_Pyramids.at(i).square.width << "\n";s
-                 if(O.y>=all_Pyramids.at(i).square.p[0].y && O.y<=all_Pyramids.at(i).square.p[0].y+all_Pyramids.at(i).square.width)
-                 {
-                    if(t_scalar>0 && t_scalar<min_t_for_check_obstacle )
-                    {
-                        //min_t_for_check_obstacle = t_scalar;
-                        return false;
-                    }
-                    else
-                    {
-                        return true;
-                    }
-                }
+                   min_t_for_check_obstacle = temp_t;
+                    return false; //no obstacle
             }
-        }
+             else return true; //obstacle ache tai diffuse light na
+
+        }  
 
 
-    //pyramid sides ray casting --
-    //ray drawn from camera eye to intersecting point
-    //and not from bufferPoint to camera eye
+        //~~~~~~~~~~~~~~~ intersection of pyramid base ~~~~~~~~~~~~~~~~~~ //
+        // ~~~~~~~~~~~~~~~~ here O is not camera pos (origin), it is pixel point
+        // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
 
-        //other method
-        for (int i = 0; i < all_Pyramids.size(); ++i)
-        {
-            for (int j = 0; j < 4; ++j)
-            {
-                Triangle tri =  all_Pyramids.at(i).tri[j];
+        rayDir.normalize();
+        O.normalize();
+        
 
-                //three triangle points a,b,c
-                Point a = Point(tri.p[0].x, tri.p[0].y, tri.p[0].z);
-                Point b = Point(tri.p[1].x, tri.p[1].y, tri.p[1].z);
-                Point c = Point(tri.p[2].x, tri.p[2].y, tri.p[2].z);
+            
 
 
-                Point AB = b-a; //AB
-                Point CA = c-a; //CA
+        // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
+        //~~~~~~~~~~~~~~~~~ pyramid sides ray casting --
+        //~~~~~~~~~~~~~~~~~~ ray drawn from camera eye to intersecting point
+        //~~~~~~~~~~~~~~~~~~~~~ and not from bufferPoint to camera eye
+        // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
+        
+        //Moller Trumbore method
+        if(Moller_Trumbore_method_for_pyramid_side_obstacle(P, source, rayDir)) return true;
+        else return false;
 
-
-                Point cross = AB*CA;
-                Point Normal = findNormal(cross);
-
-                //Point pointToLight = Point(a.x-O.x, a.y-O.y, a.z-O.z);
-                
-                //light-a
-                Point pointToLight = Point(source.x-a.x, source.y-a.y, source.z-a.z);
-                double num = dot(Normal,pointToLight);
-                double den = dot(Normal, rayDir);
-
-                double t;
-                if(den != 0 )
-                {
-                    t = num/den;
-                }
-
-                //P1 = intersecting point
-                //new_pos = camera position i.e Origin i.e eye
-                //Point P1(new_pos.x + t*rayDir.x, new_pos.y + t*rayDir.y,  new_pos.z + t*rayDir.z);
-
-                //Point P1(new_pos.x + t*rayDir.x, new_pos.y + t*rayDir.y,  new_pos.z + t*rayDir.z);
-                //Point x = Point(P1.x - a.x, P1.y - a.y, P1.z-a.z);
-                Point x = Point(P.x - a.x, P.y - a.y, P.z-a.z);
-
-                //Point x = Point(O.x - a.x, O.y - a.y, O.z-a.z);
-                Point y = AB;
-                Point z = CA;
-
-                double var1 = (dot(y,z) * dot(x,z) - dot(z,z)*dot(x,y))/(dot(y,z)*dot(y,z) - dot(y,y)*dot(z,z));
-                double var2 = (dot(y,z) * dot(x,y) - dot(y,y)*dot(x,z))/(dot(y,z)*dot(y,z) - dot(y,y)*dot(z,z));
-
-
-                //Ray intersects triangle if the last three conditions hold:
-                if( t< min_t_for_check_obstacle && var1 >= 0 && var2 >= 0 && var1+var2 <= 1)
-                {
-                    std::cout<<"here\n";
-                    min_t_for_check_obstacle = t;
-                    return false;
-                }
-                else return true;
-            }
-        }
-
-
-    //cramers -- dont see this
-    /*for(int i=0;i<all_Pyramids.size();i++)
-    {
-        for (int j= 0;j < 4; ++j)
-        {
-            Triangle temp=all_Pyramids.at(i).tri[j];
-
-            Point a1(temp.p[0].x-temp.p[1].x,temp.p[0].y-temp.p[1].y,temp.p[0].z-temp.p[1].z);
-            Point a2(temp.p[0].x-temp.p[2].x,temp.p[0].y-temp.p[2].y,temp.p[0].z-temp.p[2].z);
-            Point a3(Rd.x,Rd.y,Rd.z);
-            Point a4(temp.p[0].x-Ro.x,temp.p[0].y-Ro.y,temp.p[0].z-Ro.z);
-
-            double beta=determinant(a4,a2,a3)/determinant(a1,a2,a3);
-            double gamma=determinant(a1,a4,a3)/determinant(a1,a2,a3);
-            double t=determinant(a1,a2,a4)/determinant(a1,a2,a3);
-
-            double alpha=1-beta-gamma;
-            if(beta>=0 && beta<=1 && gamma>=0 && gamma<=1 && alpha>=0 && alpha<=1 && (alpha+beta+gamma)<=1)
-            {
-                if(t<min_t_for_check_obstacle && t>0 )
-                {
-                    return false;
-                }
-            }            
-        }
-
-    }*/
 
 
         return true;
@@ -1124,9 +972,14 @@ bool checkForObstacle(Point P, Point source)
     Color rayIntersection(Point BufferPoint,Point rayDir,int depth)
     {
 
+        if(depth==0){
+            Color c(0,0,0);
+            return c;
+        }
+
         rayDir.normalize();
         double min_t=100000;
-        Color ret_pixel(0,0.5,0.5); //default
+        Color ret_pixel(0,0,0); //default
         Point saved_intersecting_point, normal;
         
         bool does_it_intersect=false;
@@ -1238,8 +1091,6 @@ bool checkForObstacle(Point P, Point source)
             normal=all_Spheres.at(i).normal_on_sphere(intersecting_at);
             ret_pixel=all_Spheres.at(i).sphereColor;
 
-
-
         }
 
 
@@ -1251,7 +1102,7 @@ bool checkForObstacle(Point P, Point source)
     //~~~~~~~~~~~~~intersection of pyramid base
     //here O is not camera pos (origin), it is pixel point
 
-    /*for(int i=0;i<all_Pyramids.size();i++)
+  /*  for(int i=0;i<all_Pyramids.size();i++)
     {
 
         //count++;
@@ -1294,8 +1145,8 @@ bool checkForObstacle(Point P, Point source)
     }
 
 
-    }*/
-
+    }
+*/
 
     //~~~~~~~~~~~~~ pyramid SIDES ray casting --
     //ray drawn from camera eye to intersecting point
@@ -1312,19 +1163,19 @@ bool checkForObstacle(Point P, Point source)
             Triangle tri =  all_Pyramids.at(i).tri[j];
 
                 //three triangle points a,b,c
-            Point a = Point(tri.p[0].x, tri.p[0].y, tri.p[0].z);
-            Point b = Point(tri.p[1].x, tri.p[1].y, tri.p[1].z);
-            Point c = Point(tri.p[2].x, tri.p[2].y, tri.p[2].z);
+            Point pointA = Point(tri.p[0].x, tri.p[0].y, tri.p[0].z);
+            Point pointB = Point(tri.p[1].x, tri.p[1].y, tri.p[1].z);
+            Point pointC = Point(tri.p[2].x, tri.p[2].y, tri.p[2].z);
 
 
-                Point AB = b-a; //AB
-                Point CA = c-a; //CA
+                Point AB = pointB-pointA; //AB
+                Point CA = pointC-pointA; //CA
 
 
                 Point cross = AB*CA;
                 Point Normal = findNormal(cross);
 
-                Point pointToCam = Point(a.x-new_pos.x, a.y-new_pos.y, a.z-new_pos.z);
+                Point pointToCam = Point(pointA.x-new_pos.x, pointA.y-new_pos.y, pointA.z-new_pos.z);
                 double num = dot(Normal,pointToCam);
                 double den = dot(Normal, rayDir);
 
@@ -1339,7 +1190,7 @@ bool checkForObstacle(Point P, Point source)
                 Point P1(new_pos.x + t*rayDir.x, new_pos.y + t*rayDir.y,  new_pos.z + t*rayDir.z);
 
 
-                Point x = Point(P1.x - a.x, P1.y - a.y, P1.z-a.z);
+                Point x = Point(P1.x - pointA.x, P1.y - pointA.y, P1.z-pointA.z);
                 Point y = AB;
                 Point z = CA;
 
@@ -1360,23 +1211,7 @@ bool checkForObstacle(Point P, Point source)
                     chess = false;
 
                     saved_intersecting_point = P1;
-                    
-                    /*if(j==0) //check that P1 is on triangle
-                    {
-
-                        //std::cout<<"in here\n";
-                        if(isOnTriangle(P1, tri) == true)
-                        {
-                            count++;
-                            //std::cout << count <<" ";
-                            //saved_intersecting_point.printPoint();
-                        }   
-                        else
-                        {   
-                            count2++;
-                            std::cout << count2 << " : not on tri\n";
-                        }
-                    }*/
+                    normal = Normal;
 
                     amb = all_Pyramids.at(i).ambient_coef;
                     dif = all_Pyramids.at(i).diffuse_coef;
@@ -1393,56 +1228,10 @@ bool checkForObstacle(Point P, Point source)
         }
 
 
-/*
-    //~~~~~~~~~~~~~ pyramid side by cramer's
-    Point Ro = BufferPoint;
-    Point Rd = rayDir;
 
-    for(int i=0;i<all_Pyramids.size();i++)
-    {
-        for (int j = 0; j < 4; ++j)
-        {
-
-
-            Triangle temp=all_Pyramids.at(i).tri[j];
-
-            Point a1(temp.p[0].x-temp.p[1].x,temp.p[0].y-temp.p[1].y,temp.p[0].z-temp.p[1].z);
-            Point a2(temp.p[0].x-temp.p[2].x,temp.p[0].y-temp.p[2].y,temp.p[0].z-temp.p[2].z);
-            Point a3(Rd.x,Rd.y,Rd.z);
-            Point a4(temp.p[0].x-Ro.x,temp.p[0].y-Ro.y,temp.p[0].z-Ro.z);
-
-            double beta=determinant(a4,a2,a3)/determinant(a1,a2,a3);
-            double gamma=determinant(a1,a4,a3)/determinant(a1,a2,a3);
-            double t=determinant(a1,a2,a4)/determinant(a1,a2,a3);
-
-            double alpha=1-beta-gamma;
-
-            if(beta>=0 && beta<=1 && gamma>=0 && gamma<=1 && alpha>=0 && alpha<=1 && (alpha+beta+gamma)<=1)
-            {
-                if(t<min_t && t>0 )
-                {
-                    does_it_intersect=true;
-                    min_t=t;
-
-                    Point intersection(Ro.x+t*Rd.x,Ro.y+t*Rd.y,Ro.z+t*Rd.z);
-                    saved_intersecting_point = intersection;
-
-                    normal=Point (0,0,-1);
-                    ret_pixel=all_Pyramids.at(i).pyramidColor;
-                    amb = all_Pyramids.at(i).ambient_coef;
-                    dif = all_Pyramids.at(i).diffuse_coef;
-                    spec = all_Pyramids.at(i).spec_coef;
-                    reflec = all_Pyramids.at(i).reflec_coef;
-                    expo = all_Pyramids.at(i).specular_exponent;
-
-                }
-            }
-        }
-        
-    }
-*/
-
-
+        ret_pixel.r=std::max(ret_pixel.r,0.0);
+        ret_pixel.g=std::max(ret_pixel.g,0.0);
+        ret_pixel.b=std::max(ret_pixel.b,0.0);
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
         
@@ -1450,7 +1239,7 @@ bool checkForObstacle(Point P, Point source)
         {
             double I_d=0;
             double I_s=0;
-            //Point NNormal=normal;
+            Point NNormal=normal;
 
 
             //viewer
@@ -1470,6 +1259,7 @@ bool checkForObstacle(Point P, Point source)
 
                 if(res == false) //obstacle nai
                 {
+                    continue;
                     // Point S=all_Lights.at(i);
                     // Point ray_from_Intersection_To_Source(S.x-P.x,S.y-P.y,S.z-P.z);
 
@@ -1501,14 +1291,14 @@ bool checkForObstacle(Point P, Point source)
                     I_d = dot(ray_from_Intersection_To_Source,normal);
                     I_d += std::max(I_d, 0.0); //if I_d is < 0, make it zero
 
-                    
+
                      //r = d -2*(d.n)*n
                     double tp=dot(viewer,normal)*2; 
                     normal = normal * tp; 
                     Point new_Viewer(viewer.x-normal.x,viewer.y-normal.y,viewer.z-normal.z);
                     new_Viewer.normalize();
 
-                    
+
 
                     if(chess==false)
                     {
@@ -1518,7 +1308,35 @@ bool checkForObstacle(Point P, Point source)
                 }
 
             }
-            
+
+            Color pixel_illum(dif*I_d *ret_pixel.r+spec*I_s*ret_pixel.r, dif*I_d *ret_pixel.g+spec*I_s*ret_pixel.g, dif*I_d *ret_pixel.b+spec*I_s*ret_pixel.b);
+
+        // color pixel_illum = color(0,0,0);
+            pixel_illum.r=ret_pixel.r*amb+pixel_illum.r;
+            pixel_illum.g=ret_pixel.g*amb+pixel_illum.g;
+            pixel_illum.b=ret_pixel.b*amb+pixel_illum.b;
+
+            pixel_illum.r=std::max(pixel_illum.r,0.0);
+            pixel_illum.g=std::max(pixel_illum.g,0.0);
+            pixel_illum.b=std::max(pixel_illum.b,0.0);
+
+
+            NNormal.normalize();
+
+            double some=2*(dot(rayDir,NNormal));
+            NNormal.x=NNormal.x*some;  NNormal.y=NNormal.y*some;  NNormal.z=NNormal.z*some;
+            Point reflected_ray(rayDir.x-NNormal.x,rayDir.y-NNormal.y,rayDir.z-NNormal.z);
+            Point ray=reflected_ray;
+            reflected_ray.normalize();
+
+            Point nextPoint(P.x+0.001*reflected_ray.x,P.y+0.001*reflected_ray.y,P.z+0.001*reflected_ray.z);
+
+            Color c=rayIntersection(nextPoint,ray,depth-1);
+
+            pixel_illum.r=pixel_illum.r+c.r*reflec;
+            pixel_illum.g=pixel_illum.g+c.g*reflec;
+            pixel_illum.b=pixel_illum.b+c.b*reflec;
+            /*
             Color original = ret_pixel;
             
             Color light_op (dif*I_d *original.r + spec*I_s*original.r, dif*I_d*original.g + spec*I_s*original.g, dif* I_d*original.b + spec*I_s*original.b);
@@ -1531,7 +1349,23 @@ bool checkForObstacle(Point P, Point source)
             light_op.g = std::max(light_op.g,0.0);
             light_op.b = std::max(light_op.b,0.0);
 
-            return light_op;
+            NNormal.normalize();
+
+            double some=2*(dot(rayDir,NNormal));
+            NNormal.x=NNormal.x*some;  NNormal.y=NNormal.y*some;  NNormal.z=NNormal.z*some;
+            Point reflected_ray(rayDir.x-NNormal.x,rayDir.y-NNormal.y,rayDir.z-NNormal.z);
+            Point ray=reflected_ray;
+            reflected_ray.normalize();
+
+            Point nextPoint(P.x+evil_epsilon*reflected_ray.x,P.y+evil_epsilon*reflected_ray.y,P.z+evil_epsilon*reflected_ray.z);
+
+            Color c=rayIntersection(nextPoint,ray,recursionLevel-1);
+
+            light_op.r=light_op.r+c.r*reflec;
+            light_op.g=light_op.g+c.g*reflec;
+            light_op.b=light_op.b+c.b*reflec;*/
+
+            return pixel_illum;
         }
         else
         {
@@ -1687,268 +1521,7 @@ bool checkForObstacle(Point P, Point source)
     }
 
 
-/*void drawOneEighthSphere(double radius, int slices, int stacks, int divisionNo)
-{
-    glPushMatrix();
-    {
-        struct Point points[100][100];
-        int i,j;
-        double h,r;
 
-        glO_minus_Ctatef(90*(divisionNo%4),0,0,1);
-        //generate points
-        for(i=0; i<=stacks; i++) // <= na diye < dile kibhabe alada hoy
-        {
-            h=radius*sin(((double)i/(double)stacks)*(pi/2));
-            r=radius*cos(((double)i/(double)stacks)*(pi/2));
-
-            for(j=0; j<=slices; j++)
-            {
-                points[i][j].x = r*cos(((double)j/(double)slices) * (pi/2));
-                points[i][j].y = r*sin(((double)j/(double)slices) * (pi/2));
-                points[i][j].z = h;
-
-            }
-        }
-
-        ///draw quads using generated points
-        for(i=0; i<stacks; i++)
-        {
-            glColor3f(1,0,0);
-            for(j=0; j<slices; j++)
-            {
-                glBegin(GL_QUADS);
-                {
-                    //upper hemisphere
-                    if(divisionNo < 4)
-                    {
-                        glVertex3f(points[i][j].x,points[i][j].y,points[i][j].z);
-                        glVertex3f(points[i][j+1].x,points[i][j+1].y,points[i][j+1].z);
-                        glVertex3f(points[i+1][j+1].x,points[i+1][j+1].y,points[i+1][j+1].z);
-                        glVertex3f(points[i+1][j].x,points[i+1][j].y,points[i+1][j].z);
-                    }
-
-                    // lower hemisphere //only z axis points are inverted
-                    if(divisionNo >= 4 )
-                    {
-                        glVertex3f(points[i][j].x,points[i][j].y,-points[i][j].z);
-                        glVertex3f(points[i][j+1].x,points[i][j+1].y,-points[i][j+1].z);
-                        glVertex3f(points[i+1][j+1].x,points[i+1][j+1].y,-points[i+1][j+1].z);
-                        glVertex3f(points[i+1][j].x,points[i+1][j].y,-points[i+1][j].z);
-                    }
-                }
-                glEnd();
-            }
-        }
-    }
-    glPopMatrix();
-}
-*/
-
-
-/*void drawOneFourthCylinder(float radius, int Length, int slices, int divisionNo)
-{
-    glPushMatrix();
-    {
-        int i;
-        float theta;
-
-        struct Point points[100];
-        int halfLength=Length/2;
-
-        glO_minus_Ctatef(90*(divisionNo),0,0,1);
-
-        //generate points
-        for( i=0; i<=slices; i++)
-        {
-            theta = ((double)i/(double)slices)*pi/2;
-            points[i].x=radius*cos(theta);
-            points[i].y=radius*sin(theta);
-            points[i].z=halfLength;
-
-        }
-
-        //draw the cylinder from generated points
-        for( int j=0; j<slices; j++)
-        {
-
-            glColor3f(0,1,0);
-            //forms the body
-            glBegin(GL_QUADS);
-            glVertex3f(points[j].x, points[j].y, points[j].z);
-            glVertex3f(points[j+1].x, points[j+1].y, points[j+1].z);
-            glVertex3f(points[j+1].x, points[j+1].y, -points[j+1].z);
-            glVertex3f(points[j].x, points[j].y, -points[j].z);
-
-            glEnd();
-
-        }
-    }
-    glPopMatrix();
-}
-*/
-
-
-
-/*void drawSphereToFromCube(double cubeLength, int radius)
-{
-    int stacks = 20;
-    int slices = 20;
-    int j = 0;
-
-    glPushMatrix();
-    {
-
-        int len = cubeLength/2;
-        len = len-radius;
-
-        //corner spheres
-        for(int i=0; i<8; i++)
-        {
-            glPushMatrix();
-            {
-                glTranslatef(len*transX[i],len*transY[i],len*transZ[i]);
-                drawOneEighthSphere(radius, slices, stacks, i);
-            }
-            glPopMatrix();
-        }
-
-        /*side cylinders*/
-    /*for( j=0; j<=2; j++)
-    {
-    if(j==1)
-        glO_minus_Ctatef(90,1,0,0);
-    if(j==2)
-        glO_minus_Ctatef(90,0,1,0);
-
-
-    for(int i=0; i<4; i++)
-    {
-        glPushMatrix();
-        {
-            glTranslatef(len*transX[i],len*transY[i],0);
-            drawOneFourthCylinder(radius,len*2,slices,i);
-        }
-        glPopMatrix();
-    }
-
-    }
-
-    //side squares
-    len+=radius;
-    glPushMatrix();
-    {
-
-        for(int i=0; i<4; i++)
-        {
-            glPushMatrix();
-            {
-                glO_minus_Ctatef(90*i,0,0,1);
-                glTranslatef(len,0,0);
-                glO_minus_Ctatef(90,0,1,0);
-
-                drawSquare(len-radius);
-            }
-
-            glPopMatrix();
-        }
-
-
-        glPushMatrix();
-        glTranslatef(0,0,len);
-        drawSquare(len-radius);
-        glPopMatrix();
-
-        glPushMatrix();
-        glTranslatef(0,0,-len);
-        drawSquare(len-radius);
-        glPopMatchessBoardrix();
-
-    }
-    glPopMatrix();
-    }
-    glPopMatrix();
-}*/
-
-/*void drawCircle(double radius,int segments)
-{
-    int i;
-    struct Point points[100];
-    glColor3f(0.7,0.7,0.7);
-    //generate points
-    for(i=0; i<=segments; i++)
-    {
-        points[i].x=radius*cos(((double)i/(double)segments)*2*pi);
-        points[i].y=radius*sin(((double)i/(double)segments)*2*pi);
-    }
-    //draw segments using generated points
-    for(i=0; i<segments; i++)
-    {
-        glBegin(GL_LINES);
-        {
-            glVertex3f(points[i].x,points[i].y,0);
-            glVertex3f(points[i+1].x,points[i+1].y,0);
-        }
-        glEnd();
-    }
-}*/
-
-
-/*void drawAxes_()
-{
-    if(drawAxes == 1)
-    {
-
-        glBegin(GL_LINES);
-
-        ///red x
-        glColor3f(1.0,0,0);
-        glVertex3f(100,0,0);
-        glVertex3f(-100,0,0);
-
-        ///green y
-        glColor3f(0,1.0,0);
-        glVertex3f(0,100,0);
-        glVertex3f(0,-100,0);
-
-        ///blue z
-        glColor3f(0,0,1.0);
-        glVertex3f(0,0,100);
-        glVertex3f(0,0,-100);
-
-        glEnd();
-    }
-
-}*/
-
-
-/*void drawGrid_()
-{
-
-    int i;
-    if(drawGrid == 1)
-    {
-
-        glColor3f(1,0.6,0.6);
-        glBegin(GL_LINES);
-
-        for(i = -8; i <=8; i++)
-        {
-            if(i ==0 )
-                continue;
-            ///lines parallel to y axis
-            glVertex3f(i*10,-90,0);
-            glVertex3f(i*10,90,0);
-
-            ///lines parallel to x axis
-            glVertex3f(-90,i*10,0);
-            glVertex3f(90,i*10,0);
-        }
-
-        glEnd();
-    }
-}
-*/
 
     void specialKeyListener(int key, int x, int y)
     {
